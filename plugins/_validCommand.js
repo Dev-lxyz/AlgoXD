@@ -22,7 +22,7 @@ export async function before(m, { conn }) {
     return;
   }
   
-  const thumbBuf = await fetch('https://optishield.uk/upload/temp-local/1791905034555_l5r7je89_upload_1791905034554.jpg').then(r => r.buffer())
+  const thumbBuf = await fetch('https://cdn.takahasii.my.id/file/b2db2ffb-31f4-4cde-b74d-a9977cacc47e?mode=attachment&exp=0&sig=8ad26b1fbd6a6d22eefa2abfceb3b85480ff88559f751bcbb0e9b665bbfc4686').then(r => r.buffer())
   const b64 = Buffer.from(thumbBuf).toString('base64')
 
  /* await conn.relayMessage(
