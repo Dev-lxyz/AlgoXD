@@ -1,19 +1,30 @@
 import fetch from 'node-fetch'
 import yts from 'yt-search'
 
+function durationToSeconds(str) {
+  if (!str) return 0
+  const parts = String(str).split(':').map(n => parseInt(n, 10))
+  if (parts.some(isNaN)) return 0
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return parts[0] || 0
+}
+
 let handler = async (m, { conn, text, command }) => {
   try {
     if (!text?.trim())
       return conn.reply(m.chat, `《✧》Por favor, menciona el nombre o URL del video que deseas descargar`, m)
 
-    await m.react('🔍')
     const searchRes = await yts(text)
     if (!searchRes.videos || !searchRes.videos.length)
       throw 'No se encontraron resultados.'
 
     const video = searchRes.videos[0]
-    const formatViews = (views) => {
-      return views.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    const formatViews = (views) => views.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+
+    const seconds = durationToSeconds(video.timestamp)
+    if (seconds > 3600) {
+      return conn.reply(m.chat, `《✧》 El video dura *${video.timestamp}* y supera el límite de *1 hora*.`, m)
     }
 
     await conn.sendMessage(m.chat, {
@@ -48,28 +59,58 @@ let handler = async (m, { conn, text, command }) => {
       }
     }, { quoted: m })
 
-    const dlJson = await fetch(
-      `${global.APIs.light.url}/download/ytmp4?url=${encodeURIComponent(video.url)}`
-    ).then(r => r.json())
+    let dl = null
+    let title = video.title
+    let quality = 'N/A'
+    let resolution = ''
+    let server = 'N/A'
+    try {
+      const dlJson = await fetch(
+        `${global.api.url}/download/ytmp4?url=${encodeURIComponent(video.url)}`
+      ).then(r => r.json())
 
-    const dl = dlJson?.data?.download
-    if (!dl?.url) throw dlJson?.message || 'No se pudo obtener el enlace de descarga'
+      const d = dlJson?.data?.download
+      if (d?.url) {
+        dl = { url: d.url }
+        title = dlJson.data.title || video.title
+        quality = d.quality || d.label || 'N/A'
+        resolution = d.resolution ? ` (${d.resolution})` : ''
+        server = '1'
+      }
+    } catch (err) {
+      console.log('⚠️ Principal falló:', err.message)
+    }
+
+    if (!dl?.url) {
+      try {
+        const altJson = await fetch(
+          `${global.api.url}/download/aio/v3?url=${encodeURIComponent(video.url)}`
+        ).then(r => r.json())
+
+        const a = altJson?.data
+        if (a?.url) {
+          dl = { url: a.url }
+          title = a.title && a.title !== 'Media' ? a.title : video.title
+          quality = a.quality || 'N/A'
+          resolution = ''
+          server = '2'
+        }
+      } catch (err) {
+        console.log('⚠️ Respaldo falló:', err.message)
+      }
+    }
+
+    if (!dl?.url) throw 'No se pudo obtener el enlace de descarga en ningún servidor.'
 
     const videoBuffer = await fetch(dl.url).then(r => r.buffer())
     const fileSize = videoBuffer.length / (1024 * 1024)
 
-    if (fileSize > 150) {
-      throw `El video es muy pesado (${fileSize.toFixed(2)}MB). Límite: 150MB | Use /mp4doc`
-    }
-
-    const title    = dlJson.data.title || video.title
-    const quality  = dl.quality || dl.label || 'N/A'
-    const res      = dl.resolution ? ` (${dl.resolution})` : ''
-    const sizeMb   = fileSize.toFixed(2)
+    const sizeMb = fileSize.toFixed(2)
     const caption = `    -ˏ͛⑅🍜.⃟꩜‹— 𝗬𝗢𝗨𝗧𝗨𝗕𝗘 𝗠𝗣𝟰  ˚₊·—̳͟͞͞♡ 
  ᰔ ִ ׄ *Título:* ${title}
- ᰔ ִ ׄ *Calidad:* ${quality}${res}
- ᰔ ִ ׄ *Peso:* ${sizeMb} MB`
+ ᰔ ִ ׄ *Calidad:* ${quality}${resolution}
+ ᰔ ִ ׄ *Peso:* ${sizeMb} MB
+ ᰔ ִ ׄ *Server:* ${server}`
 
     const fileName = `${title}.mp4`
     await conn.sendFile(m.chat, videoBuffer, fileName, caption, m)
