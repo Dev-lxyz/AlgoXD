@@ -1,75 +1,57 @@
 import fetch from 'node-fetch'
-import yts from 'yt-search'
 
 let handler = async (m, { conn, text, command }) => {
   try {
     if (!text?.trim())
       return conn.reply(m.chat, `《✧》Por favor, menciona el nombre o URL del video que deseas descargar`, m)
 
-    await m.react('🔍')
-    const searchRes = await yts(text)
-    if (!searchRes.videos || !searchRes.videos.length)
-      throw 'No se encontraron resultados.'
-
-    const video = searchRes.videos[0]
-    const formatViews = (views) => {
-      return views.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-    }
-
-    await conn.sendMessage(m.chat, {
-        text: ` *｡ Título :* ${video.title}
- *｡ Author :* ${video.author?.name || 'Desconocido'}
- *｡ Vistas :* ${formatViews(video.views)}
- *｡ Duración :* ${video.timestamp}
- *｡ Publicado :* ${video.ago || '```'}
- *｡ Enlace :* ${video.url} 
-     
-      _🎋 Descargando audio..._
-      `,
-        linkPreview: video.thumbnail ? (await gojo(
-        { image: { url: video.thumbnail }}, 
-        { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
-      ).then(({ imageMessage }) => ({ 
-        'canonical-url': video.url,
-        'matched-text': video.url,
-        title: `𖹭  ׄ  ְ 🍡 Y O U T U B E - M U S I C   ݁      ✩   ݂      ݁  `, 
-        description: botname, 
-        jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined, 
-        highQualityThumbnail: imageMessage || undefined 
-      }))) : undefined,
-        contextInfo: {
-          mentionedJid: [m.sender],
-          isForwarded: false/*,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: channelRD.id,
-            serverMessageId: '',
-            newsletterName: channelRD.name
-          },*/
-        }
-      }, { quoted: m });
-
-    const dlRes = await fetch(`${global.APIs.light.url}/download/savetube?url=${encodeURIComponent(video.url)}&type=audio`)
+    const dlRes = await fetch(`${global.api.url}/api/play/youtube?q=${encodeURIComponent(text.trim())}&format=mp3`)
     const dlJson = await dlRes.json()
 
-    if (!dlJson.status || !dlJson.data?.dl)
+    if (!dlJson.status || !dlJson.data?.download?.mp3)
       throw 'No se pudo obtener el audio.'
 
-    const audioUrl = dlJson.data.dl
-
+    const d = dlJson.data
+    const audioUrl = d.download.mp3
+    await conn.sendMessage(m.chat, {
+      text: ` *｡ Título :* ${d.title}
+ *｡ Author :* ${d.channel || 'Desconocido'}
+ *｡ Vistas :* ${d.views || 'N/A'}
+ *｡ Duración :* ${d.duration || 'N/A'}
+ *｡ Publicado :* ${d.date || 'N/A'}
+ *｡ Peso :* ${d.sizeMB ? d.sizeMB + ' MB' : 'N/A'}
+ *｡ Enlace :* ${d.url} 
+     
+      _🕑 Descargando audio..._
+      `,
+      linkPreview: d.thumbnail ? (await gojo(
+        { image: { url: d.thumbnail } },
+        { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
+      ).then(({ imageMessage }) => ({
+        'canonical-url': d.url,
+        'matched-text': d.url,
+        title: `𖹭  ׄ  ְ 🍡 Y O U T U B E - M U S I C   ݁      ✩   ݂      ݁  `,
+        description: botname,
+        jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
+        highQualityThumbnail: imageMessage || undefined
+      }))) : undefined,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: false
+      }
+    }, { quoted: m })
     await conn.sendMessage(m.chat, {
       audio: { url: audioUrl },
       mimetype: 'audio/mpeg',
-      fileName: `${video.title}.mp3`
+      fileName: `${d.title}.mp3`
     }, { quoted: m })
-
-    await m.react('✔️')
 
   } catch (e) {
     conn.reply(m.chat, ` Error:\n${e}`, m)
   }
 }
 
-handler.command = ['play', 'audio']
+handler.command = ['play', 'audio', 'mp3']
 handler.tags = ['download']
 handler.help = ['play + <query/url>']
 handler.group = true
