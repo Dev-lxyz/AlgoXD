@@ -32,7 +32,6 @@ let handler = async (m, { conn, text, command }) => {
         thumbnail: null
       }
     } else {
-      await m.react('🔍')
       const searchRes = await yts(text)
       if (!searchRes.videos || !searchRes.videos.length)
         throw 'No se encontraron resultados.'
@@ -44,7 +43,6 @@ let handler = async (m, { conn, text, command }) => {
     if (video.timestamp && video.timestamp !== '0:00') {
       const seconds = durationToSeconds(video.timestamp)
       if (seconds > 3600) {
-        await m.react('❌')
         return conn.reply(m.chat, `《✧》 El video dura *${video.timestamp}* y supera el límite de *1 hora*.`, m)
       }
     }

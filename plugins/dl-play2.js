@@ -73,7 +73,7 @@ let handler = async (m, { conn, text, command }) => {
 
     try {
       const dlJson = await fetch(
-        `${global.APIs.light.url}/download/ytmp4?url=${encodeURIComponent(video.url)}`
+        `${global.api.url}/download/ytmp4?url=${encodeURIComponent(video.url)}`
       ).then(r => r.json())
 
       const d = dlJson?.data?.download
@@ -91,7 +91,7 @@ let handler = async (m, { conn, text, command }) => {
     if (!dl?.url) {
       try {
         const altJson = await fetch(
-          `${global.APIs.light.url}/download/aio/v3?url=${encodeURIComponent(video.url)}`
+          `${global.api.url}/download/aio/v3?url=${encodeURIComponent(video.url)}`
         ).then(r => r.json())
 
         const a = altJson?.data
