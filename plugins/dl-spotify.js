@@ -1,5 +1,5 @@
 import fetch from 'node-fetch'
-//import sharp from 'sharp'
+import sharp from 'sharp'
 
 let handler = async (m, { command, usedPrefix, conn, text, args }) => {
   if (!text) return m.reply(`ꕥ *Por favor, proporciona el nombre de una canción o artista.*`)
@@ -104,7 +104,7 @@ handler.before = async (m, { conn }) => {
       }
 
       if (!downloadUrl) throw new Error('No se pudo obtener el enlace.')
-/*
+
       let thumbDoc = null
       try {
         thumbDoc = await sharp(thumbnail)
@@ -115,7 +115,7 @@ handler.before = async (m, { conn }) => {
         console.log("⚠️ Error al procesar miniatura:", err.message)
         thumbDoc = Buffer.alloc(0)
       }
-*/
+
       await conn.sendMessage(m.chat, { 
         document: { url: downloadUrl }, 
         mimetype: 'audio/m4a', 
@@ -123,8 +123,8 @@ handler.before = async (m, { conn }) => {
         caption: `╭𖹭╮𝅄𖹠  _Downloader from spotify_
 │𐂗│  Título : ${title}
 │𐂗│  Artist : ${artist}
-╰──────────𖹭╯`
-       // jpegThumbnail: thumbDoc
+╰──────────𖹭╯`,
+       jpegThumbnail: thumbDoc
       }, { quoted: m })
 
       if (lyrics) {

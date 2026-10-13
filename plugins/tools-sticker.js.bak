@@ -23,7 +23,7 @@ stiker = buffer
 } else {
 return conn.reply(m.chat, '🍡 *Por favor, envía una \`imagen\` o \`video\` para hacer un sticker.*', m)
 }} catch (e) {
-await conn.reply(m.chat, '⚠︎ Ocurrió un Error: ' + e.message, m)
+await conn.reply(m.chat, '⚠︎ Ocurrió un Error: ' + e.message, m, rcanal)
 await m.react('✖️')
 } finally {
 if (stiker) {
