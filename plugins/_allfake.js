@@ -66,7 +66,7 @@ handler.all = async function (m) {
     participant: "0@s.whatsapp.net"
   }
 
-  global.rcanal2 = {
+  global.rcanal = {
     contextInfo: {
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
@@ -90,23 +90,6 @@ handler.all = async function (m) {
       mentionedJid: null
     }
   }
-
-  global.rcanal = (titulo = botname, cuerpo = dev, url = 'https://api--shadowcorexyz.replit.app') => ({
-    matchedText: url,
-    description: cuerpo,
-    title: titulo,
-    previewType: 'shadow',
-    jpegThumbnail: iconoBase64,
-    contextInfo: {
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: channelRD.id,
-        serverMessageId: '',
-        newsletterName: channelRD.name
-      },
-      mentionedJid: null
-    }
-  })
 }
 
 export default handler
