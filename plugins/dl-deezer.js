@@ -5,7 +5,7 @@ let handler = async (m, { conn, text }) => {
     if (!text?.trim()) {
       return conn.reply(m.chat, "《✧》Por favor, ingresa el nombre de la canción que deseas buscar.", m)
     }
-    const searchRes = await fetch(`${apis.url}/search/deezer?q=${encodeURIComponent(text)}&limit=1`)
+    const searchRes = await fetch(`${api.url}/search/deezer?q=${encodeURIComponent(text)}&limit=1`)
     const searchJson = await searchRes.json()
     if (!searchJson.status || !searchJson.data?.length) {
       throw "No se encontraron resultados."
@@ -24,7 +24,7 @@ let handler = async (m, { conn, text }) => {
 
 > 🥢 Descargando audio...`.trim() }, { quoted: m })
 
-    const dlRes = await fetch(`${apis.url}/download/deezer?url=${encodeURIComponent(song.link)}`)
+    const dlRes = await fetch(`${api.url}/download/deezer?url=${encodeURIComponent(song.link)}`)
     const dlJson = await dlRes.json()
 
     if (!dlJson.status || !dlJson.data?.downloadUrl) {

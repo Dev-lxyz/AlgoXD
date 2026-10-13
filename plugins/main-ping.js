@@ -4,38 +4,9 @@ import os from 'os'
 let handler = async (m, { conn }) => {
   const start = Date.now()
 
-  const fakePaymentQuote = {
-    key: {
-      participant: m.sender,
-      remoteJid: m.chat,
-      fromMe: false,
-      id: 'PAYQUOTE'
-    },
-    message: {
-      requestPaymentMessage: {
-        currencyCodeIso4217: 'USD',
-        amount1000: 1000000000,
-        requestFrom: m.sender,
-        noteMessage: {
-          extendedTextMessage: {
-            text: global.botname || ''
-          }
-        },
-        expiryTimestamp: Math.floor(Date.now() / 1000) + 86400,
-        amount: {
-          value: 1000000000,
-          offset: 1000,
-          currencyCode: 'USD'
-        }
-      }
-    },
-    participant: m.sender
-  }
 
   await conn.reply(m.chat, '`🌱 ¡Pong!`', m)
-
   const latensi = Date.now() - start
-
   let ramTotal = (os.totalmem() / 1024 / 1024).toFixed(0)
   let ramLibre = (os.freemem() / 1024 / 1024).toFixed(0)
   let ramUso = ramTotal - ramLibre
@@ -58,7 +29,7 @@ let handler = async (m, { conn }) => {
 
 ${dev}`
 
-  await conn.reply(m.chat, teks, fakePaymentQuote)
+  await conn.reply(m.chat, teks, m)
 }
 
 handler.help = ['ping']
