@@ -9,6 +9,7 @@ global.owner = ["51963315293", "51934053286"]
 global.prems = ["51934053286"]
 
 
+global.prefix = ["#"]
 global.vs = "^3.0 • Latest"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"

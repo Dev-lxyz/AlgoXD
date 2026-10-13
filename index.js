@@ -51,6 +51,7 @@ say('Made With Carlos.xyz', { font: 'console', align: 'center', gradient: ['blue
 protoType()
 serialize()
 
+
 global.__filename = function filename(pathURL = import.meta.url, rmPrefix = platform !== 'win32') {
   return rmPrefix ? (/file:\/\/\//.test(pathURL) ? fileURLToPath(pathURL) : pathURL) : pathToFileURL(pathURL).toString()
 }
@@ -63,7 +64,7 @@ global.__require = function require(dir = import.meta.url) {
 global.timestamp = { start: new Date() }
 const __dirname = global.__dirname(import.meta.url)
 global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
-global.prefix = new RegExp('^[#!./-]')
+global.prefix = new RegExp(global.prefix)
 
 global.db = new Low(new JSONFile('database.json'))
 global.DATABASE = global.db
@@ -92,11 +93,14 @@ global.loadDatabase = async function loadDatabase() {
 }
 await loadDatabase()
 
+
 const { state, saveCreds } = await useMultiFileAuthState(global.sessions)
+
 
 const msgRetryCounterCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const userDevicesCache = new NodeCache({ stdTTL: 0, checkperiod: 0 })
 const { version } = await fetchLatestBaileysVersion()
+
 
 let phoneNumber = global.botNumber
 const methodCodeQR = process.argv.includes('qr')
@@ -132,6 +136,7 @@ if (!credsExist && !methodCodeQR && !methodCode) {
 
 console.info = () => {}
 
+
 async function isValidPhoneNumber(number) {
   try {
     number = number.replace(/\s+/g, '')
@@ -148,12 +153,7 @@ const connectionOptions = {
   logger: pino({ level: 'silent' }),
   printQRInTerminal: opcion === '1' || methodCodeQR,
   mobile: MethodMobile,
-
-  // 🔧 FIX: browser distinto según método (igual que el bot que sí funciona)
-  browser: (opcion === '1' || methodCodeQR)
-    ? ['MacOs', 'Safari', '14.1.2']
-    : ['Ubuntu', 'Chrome', '120.0.0.0'],
-
+  browser: ['MacOs', 'Safari', '14.1.2'],
   auth: {
     creds: state.creds,
     keys: makeCacheableSignalKeyStore(state.keys, Pino({ level: 'fatal' }).child({ level: 'fatal' }))
@@ -185,12 +185,13 @@ const connectionOptions = {
 global.conn = makeWASocket(connectionOptions)
 conn.ev.on('creds.update', saveCreds)
 
-// 🔧 FIX: request pairing directo con await + timeout (sin retry loop con ws.isOpen)
+
 if (!credsExist) {
   if (opcion === '2' || methodCode) {
     opcion = '2'
     if (!conn.authState.creds.registered) {
       let addNumber
+
       if (phoneNumber) {
         addNumber = phoneNumber.replace(/[^0-9]/g, '')
       } else {
@@ -205,21 +206,24 @@ if (!credsExist) {
         addNumber = phoneNumber.replace(/\D/g, '')
       }
 
-      // Esperar 3s a que el socket se inicialice (igual que el bot que sí funciona)
-      setTimeout(async () => {
-        if (conn.authState.creds.registered) return
+      const requestCode = async (retries = 5) => {
         try {
-          let codeBot = await Promise.race([
-            conn.requestPairingCode(addNumber),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('pairing timeout')), 20000))
-          ])
+          if (!conn?.ws?.isOpen && retries > 0) {
+            await new Promise((r) => setTimeout(r, 2000))
+            return requestCode(retries - 1)
+          }
+          let codeBot = await conn.requestPairingCode(addNumber)
           codeBot = codeBot?.match(/.{1,4}/g)?.join('-') || codeBot
           console.log(chalk.bold.white(chalk.bgMagenta('[ ✿ ] Código:')), chalk.bold.white(codeBot))
-          console.log(chalk.bold.greenBright('[ ✿ ] Introduce este código en WhatsApp → Dispositivos vinculados → Vincular con número de teléfono.'))
         } catch (e) {
           console.error(chalk.red('❌ Error solicitando código:'), e.message)
+          if (retries > 0) {
+            await new Promise((r) => setTimeout(r, 3000))
+            return requestCode(retries - 1)
+          }
         }
-      }, 3000)
+      }
+      setTimeout(() => requestCode(), 3000)
     }
   }
 }
