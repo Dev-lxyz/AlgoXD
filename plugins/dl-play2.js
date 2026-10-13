@@ -14,6 +14,50 @@ function isYoutubeUrl(str) {
   return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|m\.youtube\.com)\//i.test(str.trim())
 }
 
+async function tryServer1(url) {
+  const dlJson = await fetch(
+    `${global.api.url}/download/ytmp4?url=${encodeURIComponent(url)}`
+  ).then(r => r.json())
+
+  const d = dlJson?.data?.download
+  if (!d?.url) throw new Error('Server 1 sin URL')
+
+  const buffer = await fetch(d.url).then(r => {
+    if (!r.ok) throw new Error(`Server 1 download HTTP ${r.status}`)
+    return r.buffer()
+  })
+
+  return {
+    buffer,
+    title: dlJson.data.title || 'YouTube Video',
+    quality: d.quality || d.label || 'N/A',
+    resolution: d.resolution ? ` (${d.resolution})` : '',
+    server: '1'
+  }
+}
+
+async function tryServer2(url) {
+  const altJson = await fetch(
+    `${global.api.url}/download/aio/v3?url=${encodeURIComponent(url)}`
+  ).then(r => r.json())
+
+  const a = altJson?.data
+  if (!a?.url) throw new Error('Server 2 sin URL')
+
+  const buffer = await fetch(a.url).then(r => {
+    if (!r.ok) throw new Error(`Server 2 download HTTP ${r.status}`)
+    return r.buffer()
+  })
+
+  return {
+    buffer,
+    title: a.title && a.title !== 'Media' ? a.title : 'YouTube Video',
+    quality: a.quality || 'N/A',
+    resolution: '',
+    server: '2'
+  }
+}
+
 let handler = async (m, { conn, text, command }) => {
   try {
     if (!text?.trim())
@@ -65,51 +109,25 @@ let handler = async (m, { conn, text, command }) => {
       await conn.sendMessage(m.chat, { text: infoCaption }, { quoted: m })
     }
 
-    let dl = null
-    let title = video.title
-    let quality = 'N/A'
-    let resolution = ''
-    let server = 'N/A'
+    let result = null
 
     try {
-      const dlJson = await fetch(
-        `${global.api.url}/download/ytmp4?url=${encodeURIComponent(video.url)}`
-      ).then(r => r.json())
-
-      const d = dlJson?.data?.download
-      if (d?.url) {
-        dl = { url: d.url }
-        title = dlJson.data.title || video.title
-        quality = d.quality || d.label || 'N/A'
-        resolution = d.resolution ? ` (${d.resolution})` : ''
-        server = '1'
-      }
+      result = await tryServer1(video.url)
     } catch (err) {
-      console.log('⚠️ Principal falló:', err.message)
+      console.log('⚠️ Server 1 falló:', err.message)
     }
 
-    if (!dl?.url) {
+    if (!result) {
       try {
-        const altJson = await fetch(
-          `${global.api.url}/download/aio/v3?url=${encodeURIComponent(video.url)}`
-        ).then(r => r.json())
-
-        const a = altJson?.data
-        if (a?.url) {
-          dl = { url: a.url }
-          title = a.title && a.title !== 'Media' ? a.title : video.title
-          quality = a.quality || 'N/A'
-          resolution = ''
-          server = '2'
-        }
+        result = await tryServer2(video.url)
       } catch (err) {
-        console.log('⚠️ Respaldo falló:', err.message)
+        console.log('⚠️ Server 2 falló:', err.message)
       }
     }
 
-    if (!dl?.url) throw 'No se pudo obtener el enlace de descarga en ningún servidor.'
+    if (!result) throw 'No se pudo obtener el video en ningún servidor.'
 
-    const videoBuffer = await fetch(dl.url).then(r => r.buffer())
+    const { buffer: videoBuffer, title, quality, resolution, server } = result
     const fileSize = videoBuffer.length / (1024 * 1024)
     const sizeMb = fileSize.toFixed(2)
 
