@@ -14,48 +14,7 @@ const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(function (
 }, ms))
 
 const cleanNumber = (jid = "") => String(jid).replace(/[^0-9]/g, "")
-const toPN = (number = "") => `${cleanNumber(number)}@s.whatsapp.net`
-const isLid = (jid = "") => typeof jid === "string" && jid.endsWith("@lid")
-
-async function resolveToPn(conn, jid, groupJid = null) {
-  if (!jid) return ""
-  if (!isLid(jid)) return jid
-  try {
-    const pn = await conn?.signalRepository?.lidMapping?.getPNForLID?.(jid)
-    if (pn && !isLid(pn)) return pn
-  } catch {}
-  try {
-    if (groupJid?.endsWith("@g.us")) {
-      const metadata = await conn.groupMetadata(groupJid).catch(() => null)
-      if (metadata?.participants) {
-        const lidNum = cleanNumber(jid)
-        for (const p of metadata.participants) {
-          if (cleanNumber(p.lid) === lidNum && p.jid) return p.jid
-          if (cleanNumber(p.id) === lidNum && p.jid) return p.jid
-        }
-      }
-    }
-  } catch {}
-  return jid
-}
-
-async function buildJidSet(conn, numbers = [], extraLids = []) {
-  const set = new Set()
-  for (const raw of numbers) {
-    if (!raw) continue
-    const n = cleanNumber(raw)
-    if (!n) continue
-    set.add(`${n}@s.whatsapp.net`)
-    if (conn?.signalRepository?.lidMapping?.getLIDForPN) {
-      try {
-        const lid = await conn.signalRepository.lidMapping.getLIDForPN(`${n}@s.whatsapp.net`)
-        if (lid) set.add(lid)
-      } catch {}
-    }
-  }
-  for (const l of extraLids) if (l) set.add(l)
-  return set
-}
+const toJid = (num = "") => `${cleanNumber(num)}@s.whatsapp.net`
 
 export async function handler(chatUpdate) {
   this.msgqueque = this.msgqueque || []
@@ -149,37 +108,16 @@ export async function handler(chatUpdate) {
     const chat = global.db.data.chats[m.chat]
     const settings = global.db.data.settings[this.user.jid]
 
-    const senderPn = await resolveToPn(this, m.sender, m.isGroup ? m.chat : null)
-    const senderNum = cleanNumber(senderPn)
+    const senderJid = m.sender
+    const senderNum = cleanNumber(senderJid)
 
-    const ownerNums = (global.owner || []).map(v => cleanNumber(v))
-    const premsNums = (global.prems || []).map(v => cleanNumber(v))
-    const ownerLid = Array.isArray(global.ownerLid) ? global.ownerLid : []
-    const premsLid = Array.isArray(global.premsLid) ? global.premsLid : []
+    const ownerJids = (global.owner || []).map(v => toJid(v))
+    const premsJids = (global.prems || []).map(v => toJid(v))
 
-    const ownerPnSet = new Set(ownerNums.map(n => `${n}@s.whatsapp.net`))
-    const premsPnSet = new Set(premsNums.map(n => `${n}@s.whatsapp.net`))
-    const ownerLidSet = new Set(ownerLid)
-    const premsLidSet = new Set(premsLid)
-
-    const isROwner =
-      ownerNums.includes(senderNum) ||
-      ownerPnSet.has(m.sender) ||
-      ownerLidSet.has(m.sender)
-
+    const isROwner = ownerJids.includes(senderJid) || (global.owner || []).map(cleanNumber).includes(senderNum)
     const isOwner = isROwner || m.fromMe
-
-    const isPrems =
-      isROwner ||
-      premsNums.includes(senderNum) ||
-      premsPnSet.has(m.sender) ||
-      premsLidSet.has(m.sender) ||
-      user.premium === true
-
-    const isOwners =
-      senderNum === cleanNumber(this.user.jid) ||
-      m.sender === this.user.jid ||
-      isROwner
+    const isPrems = isROwner || premsJids.includes(senderJid) || (global.prems || []).map(cleanNumber).includes(senderNum) || user.premium === true
+    const isOwners = senderJid === this.user.jid || isROwner
 
     if (settings.self && !isOwners) return
     if (settings.gponly && !isOwners && !m.chat.endsWith("g.us") && !/code|p|ping|qr|estado|status|infobot|botinfo|report|reportar|invite|join|logout|suggest|help|menu/gim.test(m.text)) return
@@ -202,55 +140,45 @@ export async function handler(chatUpdate) {
 
     let groupMetadata = {}
     let participants = []
-    let rawParticipants = []
     if (m.isGroup) {
       const md = this.chats?.[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(() => null) || {}
       groupMetadata = { ...md }
-      rawParticipants = Array.isArray(md.participants) ? md.participants : []
-      participants = rawParticipants.map(p => ({
-        id: p.id || p.jid,
-        jid: p.jid || p.id,
-        lid: p.lid || null,
-        phoneNumber: p.phoneNumber || null,
-        admin: p.admin || null
-      }))
+      const raw = Array.isArray(md.participants) ? md.participants : []
+      participants = raw.map(p => {
+        const jid = p.jid || p.id || ""
+        return {
+          id: jid,
+          jid: jid,
+          phoneNumber: p.phoneNumber || jid,
+          admin: p.admin || null
+        }
+      })
       groupMetadata.participants = participants
     }
 
-    const participantMatches = (p, targetJid, targetNum) => {
-      if (!p || !targetJid) return false
-      const pJid = p.jid || p.id || ""
-      const pLid = p.lid || ""
-      const pPhone = p.phoneNumber || ""
-      if (pJid === targetJid) return true
-      if (pLid === targetJid) return true
-      if (targetNum) {
-        if (cleanNumber(pJid) === targetNum) return true
-        if (cleanNumber(pLid) === targetNum) return true
-        if (cleanNumber(pPhone) === targetNum) return true
-      }
-      return false
+    const findParticipant = (targetJid) => {
+      if (!targetJid) return {}
+      const targetNum = cleanNumber(targetJid)
+      return participants.find(p => {
+        if (p.jid === targetJid) return true
+        if (p.id === targetJid) return true
+        if (cleanNumber(p.jid) === targetNum) return true
+        if (cleanNumber(p.id) === targetNum) return true
+        return false
+      }) || {}
     }
 
-    const botJid = this.user.jid
-    const botNum = cleanNumber(botJid)
+    const userGroup = m.isGroup ? findParticipant(m.sender) : {}
+    const botGroup = m.isGroup ? findParticipant(this.user.jid) : {}
 
-    const userGroup = m.isGroup
-      ? participants.find(p => participantMatches(p, m.sender, senderNum)) || {}
-      : {}
-
-    const botGroup = m.isGroup
-      ? participants.find(p => participantMatches(p, botJid, botNum)) || {}
-      : {}
-
-    const isRAdmin = userGroup?.admin === "superadmin" || false
-    const isAdmin = isRAdmin || userGroup?.admin === "admin" || false
-    const isBotAdmin = botGroup?.admin === "admin" || botGroup?.admin === "superadmin" || false
+    const isRAdmin = userGroup?.admin === "superadmin"
+    const isAdmin = isRAdmin || userGroup?.admin === "admin"
+    const isBotAdmin = botGroup?.admin === "admin" || botGroup?.admin === "superadmin"
 
     if (m.isGroup && chat?.primaryBot && chat.primaryBot !== this.user.jid) {
       const primaryBotJid = chat.primaryBot
       const primaryBotConn = (global.conns || []).find(c => c.user?.jid === primaryBotJid && c.ws?.socket && c.ws.socket.readyState !== ws.CLOSED)
-      const primaryBotInGroup = participants.some(p => participantMatches(p, primaryBotJid, cleanNumber(primaryBotJid)))
+      const primaryBotInGroup = participants.some(p => p.jid === primaryBotJid || cleanNumber(p.jid) === cleanNumber(primaryBotJid))
       if ((primaryBotConn && primaryBotInGroup) || primaryBotJid === global.conn.user.jid) {
         return
       } else {
