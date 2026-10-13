@@ -7,24 +7,275 @@ import chalk from "chalk"
 import fetch from "node-fetch"
 import ws from "ws"
 
+const opts = global.opts || {}
 const isNumber = x => typeof x === "number" && !isNaN(x)
 const delay = ms => isNumber(ms) && new Promise(resolve => setTimeout(function () {
-  clearTimeout(this)
-  resolve()
+  clearTimeout(this); resolve()
 }, ms))
 
-const cleanNumber = (jid = "") => String(jid).replace(/[^0-9]/g, "")
-const toJid = (num = "") => `${cleanNumber(num)}@s.whatsapp.net`
+const jidCache = new Map()
+const metadataCache = new Map()
+const metadataInflight = new Map()
+
+const JID_TTL_DM = 7 * 24 * 60 * 60_000
+const JID_TTL_GROUP = 24 * 60 * 60_000
+const META_TTL = 24 * 60 * 60_000
+const MAX_JID_CACHE = 1000
+const MAX_META_CACHE = 300
+
+const normalizeNumber = value => {
+  if (!value) return ""
+  return String(value).split("@")[0].split(":")[0].replace(/\D/g, "")
+}
+
+const normalizeJid = value => {
+  if (!value) return ""
+  const string = String(value).trim()
+  if (string.endsWith("@s.whatsapp.net")) {
+    const n = normalizeNumber(string)
+    return n ? `${n}@s.whatsapp.net` : ""
+  }
+  if (string.endsWith("@lid")) return string
+  const n = normalizeNumber(string)
+  return n ? `${n}@s.whatsapp.net` : ""
+}
+
+const isRealJid = jid => /^\d+@s\.whatsapp\.net$/.test(String(jid || ""))
+const isLid = jid => String(jid || "").endsWith("@lid")
+const isGroupJid = jid => String(jid || "").endsWith("@g.us")
+
+const getIds = jid => {
+  if (!jid) return []
+  const values = [
+    jid, jid?.id, jid?.jid, jid?.lid, jid?.participant, jid?.participantAlt,
+    jid?.senderPn, jid?.senderPnAlt, jid?.phoneNumber, jid?.pn, jid?.phone,
+    jid?.remoteJid, jid?.remoteJidAlt
+  ]
+  return [...new Set(values.flat(Infinity).filter(Boolean).map(v => String(v).trim()))]
+}
+
+const getNumbers = jid => [
+  ...new Set(
+    getIds(jid).map(v => normalizeNumber(v)).filter(n => n.length >= 7)
+  )
+]
+
+const cacheSet = (map, key, value, max = MAX_JID_CACHE) => {
+  if (!key || !value) return
+  if (map.size >= max) {
+    const first = map.keys().next().value
+    if (first) map.delete(first)
+  }
+  map.set(key, value)
+}
+
+const getCachedMetadata = chat => {
+  const cached = metadataCache.get(chat)
+  if (!cached) return null
+  if (Date.now() - cached.ts > META_TTL) {
+    metadataCache.delete(chat)
+    return null
+  }
+  return cached.data
+}
+
+const metadataCacheSet = (key, value) => {
+  if (!key || !value) return
+  if (metadataCache.size >= MAX_META_CACHE) {
+    const first = metadataCache.keys().next().value
+    if (first) metadataCache.delete(first)
+  }
+  metadataCache.set(key, { data: value, ts: Date.now() })
+}
+
+const storeLidMapping = async (conn, lid, pn) => {
+  if (!conn?.signalRepository?.lidMapping || !lid || !pn) return
+  const cleanLid = String(lid).endsWith("@lid") ? String(lid) : `${String(lid)}@lid`
+  const cleanPn = normalizeJid(pn)
+  if (!isLid(cleanLid) || !isRealJid(cleanPn)) return
+  try {
+    const mapping = conn.signalRepository.lidMapping
+    if (typeof mapping.storeLIDPNMappings === "function") {
+      await mapping.storeLIDPNMappings([{ lid: cleanLid, pn: cleanPn }])
+    } else if (typeof mapping.storeLIDPNMapping === "function") {
+      await mapping.storeLIDPNMapping(cleanLid, cleanPn)
+    }
+  } catch {}
+}
+
+const getPnFromLidMapping = async (conn, lid) => {
+  if (!conn?.signalRepository?.lidMapping || !isLid(lid)) return ""
+  try {
+    const mapping = conn.signalRepository.lidMapping
+    if (typeof mapping.getPNForLID === "function") {
+      const result = await mapping.getPNForLID(lid)
+      if (result) {
+        const pn = normalizeJid(result)
+        if (isRealJid(pn)) return pn
+      }
+    }
+  } catch {}
+  return ""
+}
+
+const saveMetadataMappings = async (conn, metadata) => {
+  if (!metadata?.participants) return
+  for (const p of metadata.participants) {
+    const lid = p?.id?.endsWith?.("@lid") ? p.id : p?.lid
+    const pn = p?.phoneNumber || p?.senderPn || p?.pn
+    if (lid && pn) await storeLidMapping(conn, lid, pn)
+  }
+  if (metadata.owner && metadata.ownerPn) {
+    await storeLidMapping(conn, metadata.owner, metadata.ownerPn)
+  }
+}
+
+const fetchGroupMetadataDeduped = async (conn, chatId) => {
+  const cached = getCachedMetadata(chatId)
+  if (cached) return cached
+  if (metadataInflight.has(chatId)) return metadataInflight.get(chatId)
+  const promise = (async () => {
+    try {
+      const meta = await conn.groupMetadata(chatId).catch(() => null)
+      if (meta) {
+        metadataCacheSet(chatId, meta)
+        await saveMetadataMappings(conn, meta)
+      }
+      return meta || null
+    } finally {
+      metadataInflight.delete(chatId)
+    }
+  })()
+  metadataInflight.set(chatId, promise)
+  return promise
+}
+
+const resolveParticipantNumber = participant => {
+  if (!participant) return ""
+  const values = [
+    participant.phoneNumber, participant.senderPn, participant.senderPnAlt,
+    participant.pn, participant.phone, participant.number, participant.id
+  ]
+  for (const value of values) {
+    if (String(value || "").endsWith("@lid")) continue
+    const number = normalizeNumber(value)
+    if (number && number.length >= 7) return number
+  }
+  return ""
+}
+
+const participantMatches = (participant, target) => {
+  if (!participant || !target) return false
+  const targetIds = getIds(target)
+  const targetNumbers = getNumbers(target)
+  const participantIds = getIds(participant)
+  const participantNumbers = getNumbers(participant)
+  if (participantIds.some(id => targetIds.includes(id))) return true
+  return participantNumbers.some(number =>
+    targetNumbers.some(targetNumber =>
+      number === targetNumber ||
+      number.endsWith(targetNumber) ||
+      targetNumber.endsWith(number)
+    )
+  )
+}
+
+async function resolveLidToRealJid(lid, conn, groupChatId) {
+  const input = String(lid || "").trim()
+  if (!input) return input
+  if (isRealJid(input)) return input
+
+  const cached = jidCache.get(input)
+  if (cached && Date.now() < cached.exp) return cached.resolved
+  if (!isLid(input)) return input
+
+  const mapped = await getPnFromLidMapping(conn, input)
+  if (mapped) {
+    cacheSet(jidCache, input, { resolved: mapped, exp: Date.now() + JID_TTL_DM })
+    return mapped
+  }
+
+  if (isGroupJid(groupChatId)) {
+    let metadata = getCachedMetadata(groupChatId)
+    if (!metadata) metadata = await fetchGroupMetadataDeduped(conn, groupChatId)
+    if (metadata) {
+      const participant = metadata.participants?.find(p => participantMatches(p, input))
+      if (participant) {
+        const number = resolveParticipantNumber(participant)
+        if (number) {
+          const resolved = `${number}@s.whatsapp.net`
+          await storeLidMapping(conn, input, resolved)
+          cacheSet(jidCache, input, { resolved, exp: Date.now() + JID_TTL_GROUP })
+          return resolved
+        }
+        if (isRealJid(participant.id)) {
+          cacheSet(jidCache, input, { resolved: participant.id, exp: Date.now() + JID_TTL_GROUP })
+          return participant.id
+        }
+      }
+    }
+  }
+  return input
+}
+
+async function resolveJid(sender, conn, chat, alternate) {
+  if (!sender && !alternate) return ""
+  const candidates = [sender, alternate].filter(Boolean)
+  for (const candidate of candidates) {
+    const input = String(candidate)
+    if (isRealJid(input)) {
+      cacheSet(jidCache, input, {
+        resolved: input,
+        exp: isGroupJid(chat) ? Date.now() + JID_TTL_GROUP : Date.now() + JID_TTL_DM
+      })
+      return input
+    }
+    if (isLid(input)) {
+      const resolved = await resolveLidToRealJid(input, conn, chat)
+      if (resolved && isRealJid(resolved)) return resolved
+    }
+  }
+  return String(sender || alternate || "")
+}
+
+const parseNumbers = list => {
+  if (!list) return []
+  const source = Array.isArray(list) ? list : [list]
+  return [...new Set(
+    source
+      .map(v => typeof v === "string" ? v : String(v?.number || v?.jid || v || ""))
+      .map(normalizeNumber)
+      .filter(n => n.length >= 7)
+  )]
+}
+
+const numberMatchesList = (numbers, list) => {
+  if (!numbers.length || !list.length) return false
+  return numbers.some(number =>
+    list.some(owner =>
+      number === owner || number.endsWith(owner) || owner.endsWith(number)
+    )
+  )
+}
+
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, value] of jidCache) {
+    if (!value?.exp || now > value.exp) jidCache.delete(key)
+  }
+  for (const [key, value] of metadataCache) {
+    if (!value?.ts || now - value.ts > META_TTL) metadataCache.delete(key)
+  }
+}, 10 * 60_000)
 
 export async function handler(chatUpdate) {
-  this.msgqueque = this.msgqueque || []
-  this.uptime = this.uptime || Date.now()
+  this.msgqueque ||= []
+  this.uptime ||= Date.now()
   if (!chatUpdate) return
   this.pushMessage(chatUpdate.messages).catch(console.error)
   let m = chatUpdate.messages[chatUpdate.messages.length - 1]
   if (!m) return
-  if (global.db.data == null)
-    await global.loadDatabase()
+  if (global.db.data == null) await global.loadDatabase()
 
   try {
     m = smsg(this, m) || m
@@ -108,17 +359,44 @@ export async function handler(chatUpdate) {
     const chat = global.db.data.chats[m.chat]
     const settings = global.db.data.settings[this.user.jid]
 
-    const senderJid = m.sender
-    const senderNum = cleanNumber(senderJid)
+    const alternateSender =
+      m.key?.participantAlt || m.key?.senderPn || m.senderPn ||
+      m.phoneNumber || ""
 
-    const ownerJids = (global.owner || []).map(v => toJid(v))
-    const premsJids = (global.prems || []).map(v => toJid(v))
+    const senderResolved =
+      await resolveJid(m.sender, this, m.chat, alternateSender).catch(() => m.sender) ||
+      m.sender
 
-    const isROwner = ownerJids.includes(senderJid) || (global.owner || []).map(cleanNumber).includes(senderNum)
-    const isOwner = isROwner || m.fromMe
-    const isPrems = isROwner || premsJids.includes(senderJid) || (global.prems || []).map(cleanNumber).includes(senderNum) || user.premium === true
-    const isOwners = senderJid === this.user.jid || isROwner
+    m.senderResolved = senderResolved
 
+    const senderIds = [
+      senderResolved, m.sender, m.key?.participant, m.key?.participantAlt,
+      m.key?.senderPn, m.key?.senderPnAlt, m.senderPn, m.senderPnAlt, m.phoneNumber
+    ].filter(Boolean)
+
+    const senderNumbers = [...new Set(getNumbers(senderIds))]
+
+    const ownerNumbers = parseNumbers(global.owner)
+    const modNumbers = parseNumbers(global.mods)
+    const premiumNumbers = parseNumbers(global.prems)
+
+    const isROwner =
+      Boolean(m.fromMe) || numberMatchesList(senderNumbers, ownerNumbers)
+    const isOwner = isROwner
+    const isMods = isOwner || numberMatchesList(senderNumbers, modNumbers)
+    const isPrems =
+      isOwner ||
+      user.premium === true ||
+      Number(user.premiumTime) > Date.now() ||
+      numberMatchesList(senderNumbers, premiumNumbers)
+
+    m.isROwner = isROwner
+    m.isOwner = isOwner
+    m.isMods = isMods
+    m.isPrems = isPrems
+    m.senderNumber = normalizeNumber(senderResolved)
+
+    const isOwners = m.sender === this.user.jid || isROwner
     if (settings.self && !isOwners) return
     if (settings.gponly && !isOwners && !m.chat.endsWith("g.us") && !/code|p|ping|qr|estado|status|infobot|botinfo|report|reportar|invite|join|logout|suggest|help|menu/gim.test(m.text)) return
 
@@ -138,38 +416,33 @@ export async function handler(chatUpdate) {
     m.exp += Math.ceil(Math.random() * 10)
     let usedPrefix
 
-    let groupMetadata = {}
+    let groupMetadata = null
     let participants = []
     if (m.isGroup) {
-      const md = this.chats?.[m.chat]?.metadata || await this.groupMetadata(m.chat).catch(() => null) || {}
-      groupMetadata = { ...md }
-      const raw = Array.isArray(md.participants) ? md.participants : []
-      participants = raw.map(p => {
-        const jid = p.jid || p.id || ""
-        return {
-          id: jid,
-          jid: jid,
-          phoneNumber: p.phoneNumber || jid,
-          admin: p.admin || null
-        }
-      })
-      groupMetadata.participants = participants
+      groupMetadata = getCachedMetadata(m.chat) || await fetchGroupMetadataDeduped(this, m.chat)
+      participants = groupMetadata?.participants || []
     }
 
-    const findParticipant = (targetJid) => {
-      if (!targetJid) return {}
-      const targetNum = cleanNumber(targetJid)
-      return participants.find(p => {
-        if (p.jid === targetJid) return true
-        if (p.id === targetJid) return true
-        if (cleanNumber(p.jid) === targetNum) return true
-        if (cleanNumber(p.id) === targetNum) return true
-        return false
-      }) || {}
+    const findParticipant = target => {
+      if (!target || !participants.length) return {}
+      return participants.find(p => participantMatches(p, target)) || {}
     }
 
-    const userGroup = m.isGroup ? findParticipant(m.sender) : {}
-    const botGroup = m.isGroup ? findParticipant(this.user.jid) : {}
+    const botJid = this.user?.id || this.user?.jid || this.user?.lid
+    const botRealJid =
+      await resolveJid(botJid, this, m.chat, this.user?.phoneNumber || this.user?.pn).catch(() => botJid) ||
+      botJid
+
+    const userGroup =
+      findParticipant(senderResolved) ||
+      findParticipant(alternateSender) ||
+      findParticipant(m.sender) ||
+      {}
+
+    const botGroup =
+      findParticipant(botRealJid) ||
+      findParticipant(botJid) ||
+      {}
 
     const isRAdmin = userGroup?.admin === "superadmin"
     const isAdmin = isRAdmin || userGroup?.admin === "admin"
@@ -178,7 +451,7 @@ export async function handler(chatUpdate) {
     if (m.isGroup && chat?.primaryBot && chat.primaryBot !== this.user.jid) {
       const primaryBotJid = chat.primaryBot
       const primaryBotConn = (global.conns || []).find(c => c.user?.jid === primaryBotJid && c.ws?.socket && c.ws.socket.readyState !== ws.CLOSED)
-      const primaryBotInGroup = participants.some(p => p.jid === primaryBotJid || cleanNumber(p.jid) === cleanNumber(primaryBotJid))
+      const primaryBotInGroup = participants.some(p => participantMatches(p, primaryBotJid))
       if ((primaryBotConn && primaryBotInGroup) || primaryBotJid === global.conn.user.jid) {
         return
       } else {
@@ -192,15 +465,13 @@ export async function handler(chatUpdate) {
       if (!plugin) continue
       if (plugin.disabled) continue
       const __filename = join(___dirname, name)
+
       if (typeof plugin.all === "function") {
         try {
-          await plugin.all.call(this, m, {
-            chatUpdate, __dirname: ___dirname, __filename, user, chat, settings
-          })
-        } catch (err) {
-          console.error(err)
-        }
+          await plugin.all.call(this, m, { chatUpdate, __dirname: ___dirname, __filename, user, chat, settings })
+        } catch (err) { console.error(err) }
       }
+
       if (!global.opts["restrict"])
         if (plugin.tags && plugin.tags.includes("admin")) continue
 
@@ -304,8 +575,8 @@ export async function handler(chatUpdate) {
       if (quequeIndex !== -1) this.msgqueque.splice(quequeIndex, 1)
     }
     if (m && m.sender) {
-      const user = global.db.data.users[m.sender]
-      if (user) user.exp += m.exp
+      const u = global.db.data.users[m.sender]
+      if (u) u.exp += m.exp
     }
     try {
       if (!global.opts["noprint"]) await (await import("./lib/print.js")).default(m, this)
