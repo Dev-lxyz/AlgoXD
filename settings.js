@@ -5,12 +5,11 @@ import fs from "fs"
 import { prepareWAMessageMedia } from '@whiskeysockets/baileys'
 
 global.botNumber = "" 
-global.owner = ["51963315293", "51934053286", "51928366955", "51922902497", "51966453839", "5213541145561", "51930958596", "51919194987", "51919194987"]
-global.suittag = ["51963315293"] 
+global.owner = ["51963315293", "51934053286"]
 global.prems = ["51934053286"]
 
 
-global.vs = "^1.8.2 • Latest"
+global.vs = "^3.0 • Latest"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
 global.kanekiAIJadibts = true
@@ -18,8 +17,6 @@ global.kanekiAIJadibts = true
 global.botname = "𖹭  ׄ  ְ 🍜 𝐆𝐨𝐣𝐨𝐁𝐨𝐭-𝐌𝐃 ✩"
 global.namebot = "Satoru Gojo"
 global.dev = "ᴍᴀᴅᴇ ᴡɪᴛʜ ʙʏ ᴄᴀʀʟᴏs.ʀᴠ ©"
-global.author = "ƈαɾʅσʂ.ɾʋ"
-global.etiqueta = "✫ᴄᴀʀʟᴏs ʀᴀᴍɪʀᴇᴢ ❄️ ⊹꙰ "
 global.currency = "g᥆𝗍іᥴᥲs"
 global.banner = "https://raw.githubusercontent.com/Dev-lxyz/upload/main/uploads/0wfrp.jpeg"
 global.icono = "https://raw.githubusercontent.com/Dev-lxyz/upload/main/uploads/g68u4.jpeg"
@@ -36,6 +33,11 @@ global.links = {
   api: "https://nexus-light.onrender.com/",
 }
 
+global.api = {
+  url: 'https://nexus--shadowxyz189.replit.app',
+  key: '....'
+}
+
 global.ch = {
   ch1: "120363421367237421@newsletter",
   ch2: "120363421367237421@newsletter"
@@ -44,14 +46,6 @@ global.ch = {
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 global.gojo = prepareWAMessageMedia
-global.APIs = {
-vreden: { url: "https://api.vreden.web.id", key: null },
-delirius: { url: "https://api.delirius.store", key: null },
-siputzx: { url: "https://api.siputzx.my.id", key: null },
-stellar: { url: "https://api.stellarwa.xyz", key: "this-xyz"},
-light: { url: "https://nexus--shadowxyz189.replit.app", key: "shadow" } // poble att: el creador 
-}
-
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
 let file = fileURLToPath(import.meta.url)
