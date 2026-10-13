@@ -6,7 +6,7 @@ let handler = async (m, { conn, text }) => {
     return conn.reply(m.chat, '`ꕥ` Ingrese el *nombre* de una canción de *soundcloud*.', m)
 
   try {
-    const api = `${global.APIs.light.url}/api/play/soundcloud?q=${encodeURIComponent(text)}`
+    const api = `${global.api.url}/api/play/soundcloud?q=${encodeURIComponent(text)}`
     const res = await axios.get(api, { timeout: 20000 })
 
     if (!res.data.status || !res.data.result)
