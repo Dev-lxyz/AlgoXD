@@ -1,24 +1,25 @@
 import fetch from 'node-fetch'
-import Jimp from 'jimp'
+import sharp from 'sharp'
 
 let handler = async (m, { command, usedPrefix, conn, text, args }) => {
   if (!text) return m.reply(`ꕥ *Por favor, proporciona el nombre de una canción o artista.*`)
 
   try {
     m.react('🕒')
-    const res = await fetch(`https://api.delirius.online/search/spotify?q=${encodeURIComponent(text)}`)
+    const res = await fetch(`${api.url}/search/spotify?q=${encodeURIComponent(text)}&limit=10`)
     const json = await res.json()
 
-    if (!json.status || !json.data?.length) throw new Error('No se encontraron canciones.')
+    if (!json.status || !json.tracks?.length) throw new Error('No se encontraron canciones.')
 
-    const songs = json.data.slice(0, 10)
+    const songs = json.tracks.slice(0, 10)
 
     let caption = `乂 \`S P O T I F Y - S E A R C H\`\n\n`
     caption += `≡ *Total resultados :* ${songs.length}\n\n`
 
     songs.forEach((song, i) => {
+      const artists = Array.isArray(song.artists) ? song.artists.join(', ') : song.artists
       caption += `\`${i + 1}\` *${song.title}*\n`
-      caption += ` *｡ Artista :* ${song.artist}\n`
+      caption += ` *｡ Artista :* ${artists}\n`
       caption += ` *｡ Álbum :* ${song.album}\n`
       caption += ` *｡ Duración :* ${song.duration}\n`
       caption += ` *｡ Date :* ${song.publish}\n\n`
@@ -62,16 +63,14 @@ handler.before = async (m, { conn }) => {
 
   for (const song of selectedSongs) {
     try {
-     
-      // await m.reply(`❀ Descargando *${song.title}* - ${song.artist}...`)
-      
-      const thumbBuf = await fetch(song.image).then(r => r.buffer())
-    const b64 = Buffer.from(thumbBuf).toString('base64')
-      await conn.relayMessage(m.chat, { extendedTextMessage: { text: `https://api--shadowcorexyz.replit.app\n❀ Descargando *${song.title}* - ${song.artist}...`, matchedText: 'https://api--shadowcorexyz.replit.app', description: namebot, title: '𖹭  ׄ  ְ 🧊 Spotify - Music ✩', previewType: 'shadow', jpegThumbnail: b64, contextInfo: { quotedMessage: m.message, participant: m.sender, stanzaId: m.id, remoteJid: m.chat, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: '120363421367237421@newsletter', serverMessageId: '', newsletterName: botname }, } }}, { quoted: m })
+      const artists = Array.isArray(song.artists) ? song.artists.join(', ') : song.artists
+      const thumbBuf = await fetch(song.thumbnail).then(r => r.buffer())
+      const b64 = Buffer.from(thumbBuf).toString('base64')
+      await conn.relayMessage(m.chat, { extendedTextMessage: { text: `https://api--shadowcorexyz.replit.app\n❀ Descargando *${song.title}* - ${artists}...`, matchedText: 'https://api--shadowcorexyz.replit.app', description: namebot, title: '𖹭  ׄ  ְ 🧊 Spotify - Music ✩', previewType: 'shadow', jpegThumbnail: b64, contextInfo: { quotedMessage: m.message, participant: m.sender, stanzaId: m.id, remoteJid: m.chat, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: '120363421367237421@newsletter', serverMessageId: '', newsletterName: botname }, } }}, { quoted: m })
 
       let lyrics = null
       try {
-        const lyricsRes = await fetch(`${global.APIs.light.url}/search/spotify-lyrics?url=${encodeURIComponent(song.url)}`)
+        const lyricsRes = await fetch(`${api.url}/search/spotify-lyrics?url=${encodeURIComponent(song.url)}`)
         const lyricsJson = await lyricsRes.json()
         if (lyricsJson.status && lyricsJson.data?.syncedLyrics) {
           lyrics = lyricsJson.data.syncedLyrics
@@ -82,11 +81,11 @@ handler.before = async (m, { conn }) => {
 
       let downloadUrl = null
       let title = song.title
-      let artist = song.artist
-      let thumbnail = song.image
+      let artist = artists
+      let thumbnail = song.thumbnail
 
       try {
-        const dlRes = await fetch(`${global.APIs.light.url}/download/spotify/v2?url=${encodeURIComponent(song.url)}`)
+        const dlRes = await fetch(`${api.url}/download/spotify/v2?url=${encodeURIComponent(song.url)}`)
         const dlJson = await dlRes.json()
         if (dlJson.status && dlJson.data?.dl) {
           downloadUrl = dlJson.data.dl
@@ -94,23 +93,24 @@ handler.before = async (m, { conn }) => {
           artist = dlJson.data.artist
         }
       } catch (err) {
-        const dlRes2 = await fetch(`${global.APIs.light.url}/download/spotify/v3?url=${encodeURIComponent(song.url)}`)
+        const dlRes2 = await fetch(`${api.url}/api/play/spotify?q=${encodeURIComponent(song.url)}`)
         const dlJson2 = await dlRes2.json()
-        if (dlJson2.status && dlJson2.data?.dl) {
-          downloadUrl = dlJson2.data.dl
-          title = dlJson2.data.title
-          artist = dlJson2.data.artist
+        if (dlJson2.status && dlJson2.result?.download) {
+          downloadUrl = dlJson2.result.download
+          title = dlJson2.result.title
+          artist = dlJson2.result.artist
+          thumbnail = dlJson2.result.image || thumbnail
         }
       }
 
       if (!downloadUrl) throw new Error('No se pudo obtener el enlace.')
 
-      
       let thumbDoc = null
       try {
-        const img = await Jimp.read(thumbnail)
-        img.resize(300, Jimp.AUTO).quality(70)
-        thumbDoc = await img.getBufferAsync(Jimp.MIME_JPEG)
+        thumbDoc = await sharp(thumbnail)
+          .resize(300)
+          .jpeg({ quality: 70 })
+          .toBuffer()
       } catch (err) {
         console.log("⚠️ Error al procesar miniatura:", err.message)
         thumbDoc = Buffer.alloc(0)

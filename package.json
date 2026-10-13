@@ -46,6 +46,7 @@
     "jsdom": "^20.0.1",
     "jszip": "^3.10.1",
     "jimp": "latest",
+    "sharp": "latest",
     "lodash": "latest",
     "lowdb": "^3.0.0",
     "megajs": "^1.1.3",
