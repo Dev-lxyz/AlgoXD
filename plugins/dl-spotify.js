@@ -6,7 +6,7 @@ let handler = async (m, { command, usedPrefix, conn, text, args }) => {
 
   try {
     m.react('🕒')
-    const res = await fetch(`${api.url}/search/spotify?q=${encodeURIComponent(text)}&limit=10`)
+    const res = await fetch(`${global.api.url}/search/spotify?q=${encodeURIComponent(text)}&limit=10`)
     const json = await res.json()
 
     if (!json.status || !json.tracks?.length) throw new Error('No se encontraron canciones.')
@@ -70,7 +70,7 @@ handler.before = async (m, { conn }) => {
 
       let lyrics = null
       try {
-        const lyricsRes = await fetch(`${api.url}/search/spotify-lyrics?url=${encodeURIComponent(song.url)}`)
+        const lyricsRes = await fetch(`${global.api.url}/search/spotify-lyrics?url=${encodeURIComponent(song.url)}`)
         const lyricsJson = await lyricsRes.json()
         if (lyricsJson.status && lyricsJson.data?.syncedLyrics) {
           lyrics = lyricsJson.data.syncedLyrics
@@ -85,7 +85,7 @@ handler.before = async (m, { conn }) => {
       let thumbnail = song.thumbnail
 
       try {
-        const dlRes = await fetch(`${api.url}/download/spotify/v2?url=${encodeURIComponent(song.url)}`)
+        const dlRes = await fetch(`${global.api.url}/download/spotify/v2?url=${encodeURIComponent(song.url)}`)
         const dlJson = await dlRes.json()
         if (dlJson.status && dlJson.data?.dl) {
           downloadUrl = dlJson.data.dl
@@ -93,7 +93,7 @@ handler.before = async (m, { conn }) => {
           artist = dlJson.data.artist
         }
       } catch (err) {
-        const dlRes2 = await fetch(`${api.url}/api/play/spotify?q=${encodeURIComponent(song.url)}`)
+        const dlRes2 = await fetch(`${global.api.url}/api/play/spotify?q=${encodeURIComponent(song.url)}`)
         const dlJson2 = await dlRes2.json()
         if (dlJson2.status && dlJson2.result?.download) {
           downloadUrl = dlJson2.result.download
