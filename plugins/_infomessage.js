@@ -18,15 +18,18 @@ handler.before = async function (m, { conn, participants }) {
   const usuario = await resolveToJid(m.sender, conn, m.chat)
   const usuarioNum = usuario.split('@')[0].split(':')[0]
 
-  const rawTarget = m.messageStubParameters?.[0] || ''
-  const isTargetJid =
-    /^\d{7,}$/.test(rawTarget) ||
-    rawTarget.endsWith('@lid') ||
-    rawTarget.endsWith('@s.whatsapp.net')
+  const rawParam = m.messageStubParameters?.[0]
+  const rawParamStr = (rawParam && typeof rawParam === 'object')
+    ? String(rawParam.id || rawParam.jid || rawParam.lid || rawParam.phoneNumber || '')
+    : String(rawParam || '')
 
-  const users = isTargetJid
-    ? await resolveToJid(rawTarget, conn, m.chat)
-    : rawTarget
+  const isOnOff = rawParamStr === 'on' || rawParamStr === 'off'
+
+  let users = rawParamStr
+  if (!isOnOff && /^\d{7,}/.test(rawParamStr)) {
+    const jidCandidate = rawParamStr.includes('@') ? rawParamStr : `${rawParamStr}@lid`
+    users = await resolveToJid(jidCandidate, conn, m.chat)
+  }
   const usersNum = String(users).split('@')[0].split(':')[0]
 
   const adminIds = (participants || [])
@@ -38,11 +41,11 @@ handler.before = async function (m, { conn, participants }) {
     (await conn.profilePictureUrl(m.chat, 'image').catch(() => null)) ||
     'https://files.catbox.moe/5biv5v.jpg'
 
-  const nombre = `> ❀ @${usuarioNum} Ha cambiado el nombre del grupo.\n> ✦ Ahora el grupo se llama:\n> *${rawTarget}*.`
+  const nombre = `> ❀ @${usuarioNum} Ha cambiado el nombre del grupo.\n> ✦ Ahora el grupo se llama:\n> *${rawParamStr}*.`
   const foto = `> ❀ Se ha cambiado la imagen del grupo.\n> ✦ Acción hecha por:\n> » @${usuarioNum}`
-  const edit = `> ❀ @${usuarioNum} Ha permitido que ${rawTarget == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`
+  const edit = `> ❀ @${usuarioNum} Ha permitido que ${rawParamStr == 'on' ? 'solo admins' : 'todos'} puedan configurar el grupo.`
   const newlink = `> ❀ El enlace del grupo ha sido restablecido.\n> ✦ Acción hecha por:\n> » @${usuarioNum}`
-  const status = `> ❀ El grupo ha sido ${rawTarget == 'on' ? '*cerrado*' : '*abierto*'} Por @${usuarioNum}\n> ✦ Ahora ${rawTarget == 'on' ? '*solo admins*' : '*todos*'} pueden enviar mensaje.`
+  const status = `> ❀ El grupo ha sido ${rawParamStr == 'on' ? '*cerrado*' : '*abierto*'} Por @${usuarioNum}\n> ✦ Ahora ${rawParamStr == 'on' ? '*solo admins*' : '*todos*'} pueden enviar mensaje.`
   const admingp = `> ❀ @${usersNum} Ahora es admin del grupo.\n> ✦ Acción hecha por:\n> » @${usuarioNum}`
   const noadmingp = `> ❀ @${usersNum} Deja de ser admin del grupo.\n> ✦ Acción hecha por:\n> » @${usuarioNum}`
 
