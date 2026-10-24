@@ -38,9 +38,7 @@ export default {
   tags: ['ia'],
   run: async (m, { args, text, usedPrefix, command }) => {
     if (!text) return m.reply(`ꕥ *Ingrese su consulta*\n\n*Ejemplo:* ${usedPrefix}${command} ¿Quién es satoru Gojo?`)
-
     await m.react('💬')
-
     try {
       const url = `${api.url}/ai/copilot?text=${encodeURIComponent(text)}&model=default`
       
@@ -50,10 +48,8 @@ export default {
       if (!json.status || !json.result) {
         return m.reply('❌ Error API')
       }
-
       await m.reply(json.result)
       await m.react('✅')
-
     } catch (e) {
       m.reply(`Ocurrio un error: ${e.message || e}`)
     }

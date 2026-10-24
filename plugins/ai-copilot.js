@@ -33,7 +33,6 @@ import fetch from "node-fetch"
 
 export default {
   command: ['copilot'],
-  category: 'ia',
   help: ['copilot'],
   tags: ['ia'],
   run: async (m, { args, text, usedPrefix, command }) => {
