@@ -22,14 +22,14 @@ export async function before(m, { conn }) {
     return;
   }
   
-  const thumbBuf = await fetch('https://cdn.takahasii.my.id/file/b2db2ffb-31f4-4cde-b74d-a9977cacc47e?mode=attachment&exp=0&sig=8ad26b1fbd6a6d22eefa2abfceb3b85480ff88559f751bcbb0e9b665bbfc4686').then(r => r.buffer())
+  const thumbBuf = await fetch('https://raw.githubusercontent.com/Dev-lxyz/file/main/files/kyftr.jpeg').then(r => r.buffer())
   const b64 = Buffer.from(thumbBuf).toString('base64')
 
- /* await conn.relayMessage(
+  await conn.relayMessage(
     m.chat,
     {
       extendedTextMessage: {
-        text: `https://api.gojo.biz.id\nᥱᥣ ᥴ᥆mᥲᥒძ᥆ *${command}*🌵 ᥒ᥆ ᥱ᥊іs𝗍ᥱ <:3\n> 🍜 ᥙsᥲ *${usedPrefix}ʜᴇʟᴘ* ⍴ᥲrᥲ ᥎ᥱr ᥣᥲ ᥣіs𝗍ᥲ ძᥱ ᥴ᥆mᥲᥒძ᥆s.`,
+        text: `https://api.gojo.biz.id\n❀ ᥱᥣ ᥴ᥆mᥲᥒძ᥆ *${command}* ᥒ᥆ ᥱ᥊іs𝗍ᥱ.\n> ⚥︎ ᥙsᥲ *${usedPrefix}ʜᴇʟᴘ* ⍴ᥲrᥲ ᥎ᥱr ᥣᥲ ᥣіs𝗍ᥲ ძᥱ ᥴ᥆mᥲᥒძ᥆s.`,
         matchedText: 'https://api.gojo.biz.id',
         description: '🥢 Welcome, to Satoru Gojou.',
         title: botname,
@@ -44,7 +44,7 @@ export async function before(m, { conn }) {
       }
     },
     { quoted: m }
-  )*/
+  )/*
   await conn.sendMessage(m.chat, {
     text: `https://chat.whatsapp.com/HNPyEUbZscyCZx81xety6o?s=cl&p=a&mlu=4\nᥱᥣ ᥴ᥆mᥲᥒძ᥆ *${command}*🌵 ᥒ᥆ ᥱ᥊іs𝗍ᥱ <:3\n> 🍜 ᥙsᥲ *${usedPrefix}ʜᴇʟᴘ* ⍴ᥲrᥲ ᥎ᥱr ᥣᥲ ᥣіs𝗍ᥲ ძᥱ ᥴ᥆mᥲᥒძ᥆s.`,
     linkPreview: banner ? (await gojo(
@@ -69,5 +69,5 @@ export async function before(m, { conn }) {
       
     }
   }, { quoted: m })
-  
+  */
 }

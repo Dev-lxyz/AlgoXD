@@ -1,111 +1,72 @@
 import fetch from 'node-fetch'
-import fs from 'fs'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execPromise = promisify(exec)
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-
-  if (!text) {
-    return m.reply(`❀ Ingresa lo que quieres buscar
-
-> Ejemplo:
-${usedPrefix + command} worry`)
-  }
-
-  const tmpMp3 = `./tmp/${Date.now()}.mp3`
-  const tmpOgg = `./tmp/${Date.now()}.ogg`
+  if (!text?.trim()) return conn.reply(m.chat, `*🌾 Ingrese el nombre en una música.*\n✿ Ejemplo: *${usedPrefix + command} diles - Bad Bunny*`, m)
 
   try {
+    await m.react("🕐")
+    let s = await (await fetch(`${api.url}/search/yt-search?q=${encodeURIComponent(text)}`)).json()
+    let d = s.result
+    if (!s.status || !d) return conn.reply(m.chat, "✿ No se encontraron resultados.", m)
 
-    await m.react('🕒')
+    let caption = `*「✦」 Descargando » ${d.title}*
 
-    const api = `${global.APIs.light.url}/search/yt-search?q=${encodeURIComponent(text)}`
+*✐ Canal ›* ${d.author}
+*ⴵ Duración ›* ${d.duration}
+*ꕥ Vistas ›* ${d.views}
+*✰ Publicado ›* ${d.uploaded}
 
-    const res = await fetch(api)
-    const json = await res.json()
-
-    if (!json.status || !json.result) {
-      throw 'No se encontraron resultados'
-    }
-
-    const data = json.result
-
-    let caption =
-`🧊 *Título:* ${data.title}
-🌳 *Autor:* ${data.author}
-⏱️ *Duración:* ${data.duration}
-🍜 *Vistas:* ${data.views}
-🍃 *Link:* ${data.url}`
+> \`\`\`🍬 Iniciando descarga, espere un momento.\`\`\``
 
     await conn.sendMessage(m.chat, {
-      image: { url: data.thumbnail },
-      caption
+      text: caption,
+      linkPreview: d.thumbnail ? (await gojo(
+        { image: { url: d.thumbnail } },
+        { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
+      ).then(({ imageMessage }) => ({
+        'canonical-url': d.url,
+        'matched-text': d.url,
+        title: `𖹭  ׄ  ְ 🍁 Y O U T U B E   ݁      ✩   ݂      ݁  `,
+        description: botname,
+        jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
+        highQualityThumbnail: imageMessage || undefined
+      }))) : undefined,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        isForwarded: false
+      }
     }, { quoted: m })
 
-    if (command === 'playaudio') {
+    if (command === 'playvideo') {
+      let api2 = await (await fetch(`${api.url}/download/ytdl?url=${d.url}&format=mp4`)).json()
+      let dl = api2.data?.download
+      if (!dl) throw new Error("No se pudo obtener el enlace")
 
-      const api2 = `${global.APIs.light.url}/download/savetube?url=${encodeURIComponent(data.url)}&type=audio`
+      await conn.sendFile(m.chat, dl, `${d.title}.mp4`, `*» Título:* ${d.title}`, m, null, {
+        asDocument: true,
+        mimetype: 'video/mp4'
+      })
 
-      const res2 = await fetch(api2)
-      const json2 = await res2.json()
-
-      if (!json2.status || !json2.data?.dl) {
-        throw 'Error al obtener el audio'
-      }
-
-      const audioRes = await fetch(json2.data.dl)
-      const buffer = Buffer.from(await audioRes.arrayBuffer())
-
-      fs.writeFileSync(tmpMp3, buffer)
-
-      await execPromise(
-        `ffmpeg -i "${tmpMp3}" -c:a libopus -b:a 64k "${tmpOgg}" -y`
-      )
+    } else {
+      let api2 = await (await fetch(`${api.url}/download/savetube?url=${d.url}&type=audio`)).json()
+      let dl = api2.data?.dl
+      if (!dl) throw new Error("No se pudo obtener el enlace")
 
       await conn.sendMessage(m.chat, {
-        audio: fs.readFileSync(tmpOgg),
+        audio: { url: dl },
         mimetype: 'audio/ogg; codecs=opus',
-        ptt: true
+        fileName: `${d.title}.ogg`,
+        ptt: false
       }, { quoted: m })
-
-      if (fs.existsSync(tmpMp3)) fs.unlinkSync(tmpMp3)
-      if (fs.existsSync(tmpOgg)) fs.unlinkSync(tmpOgg)
     }
-
-    if (command === 'playvideo') {
-
-      const api2 = `${global.APIs.light.url}/download/ytmp4?url=${encodeURIComponent(data.url)}`
-
-      const res2 = await fetch(api2)
-      const buffer = Buffer.from(await res2.arrayBuffer())
-
-      await conn.sendFile(
-        m.chat,
-        buffer,
-        `${data.title}.mp4`,
-        `🎞️ ${data.title}`,
-        m
-      )
-    }
-
-    await m.react('✅')
-
+    await m.react("✔️")
   } catch (e) {
-    console.log(e)
-
-    if (fs.existsSync(tmpMp3)) fs.unlinkSync(tmpMp3)
-    if (fs.existsSync(tmpOgg)) fs.unlinkSync(tmpOgg)
-
-    await m.react('✖️')
-
-    m.reply(`✘ Error:\n${e.message || e}`)
+    conn.reply(m.chat, `✿ Error: ${e.message}`, m)
   }
 }
 
-handler.help = ['playaudio', 'playvideo']
-handler.tags = ['download']
 handler.command = ['playaudio', 'playvideo']
-
+handler.tags = ['download']
+handler.help = ['playaudio <query>', 'playvideo <query>']
+handler.group = true
 export default handler

@@ -9,7 +9,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
     const getVideo = async (url, retries = 2) => {
         for(let i = 0; i <= retries; i++) {
             try {
-                let res = await fetch(`${global.APIs.light.url}/api/play/youtube?q=${encodeURIComponent(url)}&format=mp4`)
+                let res = await fetch(`${api.url}/api/play/youtube?q=${encodeURIComponent(url)}&format=mp4`)
                 let json = await res.json()
                 
                 if(!json.status || !json.data) throw new Error('Sin datos')

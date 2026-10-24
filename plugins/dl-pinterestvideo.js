@@ -62,7 +62,7 @@ var shadow = async (m, { text, usedPrefix, command, conn }) => {
   await m.react('🔍')
 
   try {
-    const url = `${global.APIs.light.url}/search/pinterest-video?q=${encodeURIComponent(text)}`
+    const url = `${api.url}/search/pinterest-video?q=${encodeURIComponent(text)}`
     const res = await fetch(url)
     const json = await res.json()
 

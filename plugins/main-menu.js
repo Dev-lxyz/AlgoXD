@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+-import fetch from 'node-fetch'
 
 let handler = async (m, { conn, usedPrefix }) => {
   try {
@@ -42,18 +42,16 @@ let handler = async (m, { conn, usedPrefix }) => {
         + `\n*╰─┈⟢*`
     }).join('\n\n')
 
-    let menu = ` 🍡 𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨, 𝐒𝐚𝐭𝐨𝐫𝐮 𝐆𝐨𝐣𝐨𝐮 (${(conn.user.jid == global.conn.user.jid ? '𝐎𝐟𝐢𝐜𝐢𝐚𝐥' : '𝐒𝐮𝐛-𝐁𝐨𝐭')}) 𔗨𔗨
-￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣
+    let menu = `   *╭ 𖧷۪۪ᰰ⃟ːֱ۪۪۪۪۪۪۪۪፝͜͜͡͡❏▭ֹ▭ֹ▭ֹ²⁰²⁶▭ֹ▭ֹ▭ֹ𖧷۪۪ᰰ⃟ːֱ۪۪۪۪۪۪۪۪፝͜͜͡͡✿╮*
+      ⚝ Welcome to! ${global.namebot} ✧͏
+   *╰𖧷۪۪ᰰ⃟ːֱ۪۪۪۪۪۪۪۪፝͜͜͡͡❏▭ֹ▭ֹ▭ֹ²⁰²⁶▭ֹ▭ֹ▭ֹ𖧷۪۪ᰰ⃟ːֱ۪۪۪۪۪۪۪۪፝͜͜͡͡✿*
 
- *⟢ Usuarios :* ${totalreg}
- *⟢ Grupos :* ${groupsCount}
- *⟢ comnds :* ${totalCommands}
- *⟢ Runtime :* ${uptime}
- *⟢ Date :* ${date}
- *⟢* \`\`\`https://whatsapp.com/channel/0029VbBGlokA89MliWWv1x16\`\`\`
- 
-࿙𝆊࿚𝆊࿙࿚ㅤׁ࿙𝆊࿚𝆊࿙࿚ㅤׁㅤ࿙𝆊࿚𝆊࿙࿚ㅤׁ࿙𝆊࿚𝆊࿙࿚ㅤׁㅤ࿙𝆊࿚𝆊࿙࿚
-
+   *𑄝 𝚃𝙸𝙴𝙼𝙿𝙾 𝙰𝙲𝚃𝙸𝚅𝙾 ──* ${uptime}
+   *𑄝 𝚃𝚈𝙿𝙴 ──* ${(conn.user.jid == global.conn.user.jid ? 'Bot Principal' : 'Sub-Bot')}
+   *𑄝 𝚄𝚂𝚄𝙰𝚁𝙸𝙾𝚂 ──* ${totalreg}
+   *𑄝 𝙶𝚁𝚄𝙿𝙾𝚂 ──* ${groupsCount}
+   *𑄝 𝙲𝙾𝙼𝙰𝙽𝙳𝙾𝚂 ──* ${totalCommands}
+   ￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣
 
 ${secciones}`.trim()
 
@@ -116,5 +114,5 @@ function clockString(ms) {
   let seconds = Math.floor((ms / 1000) % 60)
   let minutes = Math.floor((ms / (1000 * 60)) % 60)
   let hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
-  return `${hours}ʜ ${minutes}ᴍ ${seconds}s`
+  return `${hours}H, ${minutes}M, ${seconds}S`
 }

@@ -9,7 +9,7 @@ global.owner = ["51963315293", "51934053286"]
 global.prems = ["51934053286"]
 
 
-global.prefix = ["#"]
+global.prefix = ["#/"]
 global.vs = "^3.0 • Latest"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
@@ -31,7 +31,7 @@ global.links = {
   channel: "https://whatsapp.com/channel/0029VbBGlokA89MliWWv1x16",
   github: "https://github.com/Carlos13ra/GOJOBOT-MD",
   gmail: "shadowcore.xyz@gmail.com",
-  api: "https://nexus-light.onrender.com/",
+  api: "https://nexus-light.onrender.com/"
 }
 
 global.api = {

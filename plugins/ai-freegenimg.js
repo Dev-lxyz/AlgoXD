@@ -7,7 +7,7 @@ let handler = async (m, { conn, text, usedPrefix }) => {
 	let msg = await conn.sendMessage(m.chat, { text: `乂 FREEGEN IMAGE 乂\n✩ Generando imagen...` }, { quoted: m })
 	
 	try {
-	  const apiUrl = `${global.APIs.light.url}/ai/freegen-image?prompt=${encodeURIComponent(text.trim())}`
+	  const apiUrl = `${api.url}/ai/freegen-image?prompt=${encodeURIComponent(text.trim())}`
 	  const res = await fetch(apiUrl, { timeout: 30000 })
 	  const json = await res.json()
 		

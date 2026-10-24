@@ -1,29 +1,26 @@
+import yts from 'yt-search'
 import fetch from 'node-fetch'
 
-let handler = async (m, { conn, text, command }) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text?.trim()) return conn.reply(m.chat, `✿ Ejemplo: *${usedPrefix + command} diles - Bad Bunny*`, m)
+
   try {
-    if (!text?.trim())
-      return conn.reply(m.chat, `《✧》Por favor, menciona el nombre o URL del video que deseas descargar`, m)
+    await m.react("🕐")
+    let search = await yts(text)
+    let d = search.videos[0]
+    if (!d) return conn.reply(m.chat, "✿ No se encontraron resultados.", m)
 
-    const dlRes = await fetch(`${global.api.url}/api/play/youtube?q=${encodeURIComponent(text.trim())}&format=mp3`)
-    const dlJson = await dlRes.json()
+    let caption = `    ˚ · ๑୧ YOᑌTᑌᗷᗴ ᗪOᗯᑎᒪOᗩᗪᗴᖇ ✧
+    
+*｡ 𝚃𝙸𝚃𝚄𝙻𝙾 ›* ${d.title}
+*｡ 𝙲𝙰𝙽𝙰𝙻 ›* ${d.author.name}
+*｡ 𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽 ›* ${d.timestamp}
+*｡ 𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾 ›* ${d.ago}
+*｡ 𝚅𝙸𝚂𝚃𝙰𝚂 ›* ${d.views.toLocaleString()}
+*｡ 𝙴𝙽𝙻𝙰𝙲𝙴 ›* ${d.url}`
 
-    if (!dlJson.status || !dlJson.data?.download?.mp3)
-      throw 'No se pudo obtener el audio.'
-
-    const d = dlJson.data
-    const audioUrl = d.download.mp3
     await conn.sendMessage(m.chat, {
-      text: ` *｡ Título :* ${d.title}
- *｡ Author :* ${d.channel || 'Desconocido'}
- *｡ Vistas :* ${d.views || 'N/A'}
- *｡ Duración :* ${d.duration || 'N/A'}
- *｡ Publicado :* ${d.date || 'N/A'}
- *｡ Peso :* ${d.sizeMB ? d.sizeMB + ' MB' : 'N/A'}
- *｡ Enlace :* ${d.url} 
-     
-      _🕑 Descargando audio..._
-      `,
+      text: caption,
       linkPreview: d.thumbnail ? (await gojo(
         { image: { url: d.thumbnail } },
         { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
@@ -31,7 +28,7 @@ let handler = async (m, { conn, text, command }) => {
         'canonical-url': d.url,
         'matched-text': d.url,
         title: `𖹭  ׄ  ְ 🍡 Y O U T U B E - M U S I C   ݁      ✩   ݂      ݁  `,
-        description: botname,
+        description: dev,
         jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
         highQualityThumbnail: imageMessage || undefined
       }))) : undefined,
@@ -40,19 +37,25 @@ let handler = async (m, { conn, text, command }) => {
         isForwarded: false
       }
     }, { quoted: m })
+
+    let api = await (await fetch(`${api.url}/download/savetube?url=${d.url}&type=audio`)).json()
+    let dl = api.data?.dl
+    if (!dl) throw new Error("No se pudo obtener el enlace de descarga")
+
     await conn.sendMessage(m.chat, {
-      audio: { url: audioUrl },
+      audio: { url: dl },
       mimetype: 'audio/mpeg',
       fileName: `${d.title}.mp3`
     }, { quoted: m })
+    await m.react("✔️")
 
   } catch (e) {
-    conn.reply(m.chat, ` Error:\n${e}`, m)
+    conn.reply(m.chat, `> ✿︎ An unexpected error occurred while executing command *${usedPrefix + command}*.\n> *[Error: ${e.message || e}]*`, m)
   }
 }
 
-handler.command = ['play', 'audio', 'mp3']
+handler.command = ['play', 'audio', 'mp3', 'ytaudio']
 handler.tags = ['download']
-handler.help = ['play + <query/url>']
+handler.help = ['play <query/url>']
 handler.group = true
 export default handler

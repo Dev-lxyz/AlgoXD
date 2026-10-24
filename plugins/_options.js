@@ -5,10 +5,10 @@ const chat = global.db.data.chats[m.chat]
 let type = command.toLowerCase()
 let isEnable = chat[type] !== undefined ? chat[type] : false
 if (args[0] === 'on' || args[0] === 'enable') {
-if (isEnable) return conn.reply(m.chat, `🍜 *${type}* ya estaba *activado*.`, m, fake)
+if (isEnable) return conn.reply(m.chat, `🍄 *${type}* ya estaba *activado*.`, m, fake)
 isEnable = true
 } else if (args[0] === 'off' || args[0] === 'disable') {
-if (!isEnable) return conn.reply(m.chat, `🫒 *${type}* ya estaba *desactivado*.`, m, fake)
+if (!isEnable) return conn.reply(m.chat, `✿︎ *${type}* ya estaba *desactivado*.`, m, fake)
 isEnable = false
 } else {
 return conn.reply(m.chat, `ꕥ *Un administrador puede gestionar el comando:*
@@ -106,7 +106,7 @@ chat.gacha = isEnable
 break
 }}
 chat[type] = isEnable
-conn.reply(m.chat, `🧊 Has *${isEnable ? 'activado' : 'desactivado'}* el *${type}* para este grupo.`, m, fake)
+conn.reply(m.chat, `★ Has *${isEnable ? 'activado' : 'desactivado'}* el *${type}* para este grupo.`, m, fake)
 }
 handler.help = ['welcome', 'bienvenida', 'modoadmin', 'onlyadmin', 'nsfw', 'modohorny', 'economy', 'economia', 'rpg', 'gacha', 'detect', 'alertas', 'antilink', 'antienlace', 'antilinks', 'antienlaces']
 handler.tags = ['nable']

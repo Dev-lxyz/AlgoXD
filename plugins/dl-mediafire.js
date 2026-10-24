@@ -48,6 +48,7 @@ function detectMime(data) {
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text) return m.reply(`《✧》 Manda link de Mediafire\n*Ejemplo:* ${usedPrefix + command} https://www.mediafire.com/file/xxx/file`)
   try {
+    await m.reply('*🧋 Buscando.....*')
     const apiUrl = `${global.api.url}/download/mediafire?url=${encodeURIComponent(text)}`
     const res = await fetch(apiUrl)
     const json = await res.json()
@@ -58,15 +59,44 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     const d = json.data
     const { filename, filetype, size, uploaded, owner, download_url } = d
-
     const mimetype = detectMime(d)
-    await m.reply(` 🍡 *MEDIAFIRE DOWNLOADER*
- ° *Nombre:* ${filename}
+    
+    const thumbBuf = await fetch('https://raw.githubusercontent.com/Dev-lxyz/file/main/files/ey7gd.jpeg').then(r => r.buffer())
+  const b64 = Buffer.from(thumbBuf).toString('base64')
+
+ /*await conn.relayMessage(m.chat, { extendedTextMessage: { text: api.url + ` ° *Nombre:* ${filename}
  ° *Tipo:* ${filetype || mimetype}
  ° *Mime:* ${mimetype}
  ° *Peso:* ${size}
  ° *Subido:* ${uploaded}
- ° *Owner:* ${owner}`)
+ ° *Owner:* ${owner}`, matchedText: api.url, description: '🍡 *MEDIAFIRE DOWNLOADER*', title: dev, previewType: 'shadow', jpegThumbnail: b64, contextInfo: { quotedMessage: m.message, participant: m.sender, stanzaId: m.id, remoteJid: m.chat }} }, { quoted: m })*/
+    
+    
+  //  await m.reply(``)
+  
+    const txt = ` ° *Nombre:* ${filename}
+ ° *Tipo:* ${filetype || mimetype}
+ ° *Mime:* ${mimetype}
+ ° *Peso:* ${size}
+ ° *Subido:* ${uploaded}
+ ° *Owner:* ${owner}`,
+ 
+    await conn.relayMessage(m.chat, { 
+      extendedTextMessage: { 
+        text: api.url + txt, 
+        matchedText: api.url, 
+        description: '🧃 *MEDIAFIRE DOWNLOADER*', 
+        title: dev, 
+        previewType: 'shadow', 
+        jpegThumbnail: b64, 
+        contextInfo: { 
+          quotedMessage: m.message, 
+          participant: m.sender, 
+          stanzaId: m.id, 
+          remoteJid: m.chat 
+        }
+      } 
+    }, { quoted: m })
 
     await conn.sendMessage(m.chat, {
       document: { url: download_url },

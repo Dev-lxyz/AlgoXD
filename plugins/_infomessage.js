@@ -17,7 +17,6 @@ const users = m.messageStubParameters[0]
 const usuario = await resolveLidToRealJid(m?.sender, conn, m?.chat)
 const groupAdmins = participants.filter(p => p.admin)
 
-const rcanal = { contextInfo: { isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: channelRD.id, serverMessageId: '（つ  / ♡. ㅤ•*゜・。... 🄶🄾🄹🄾 🄱🄾🅃 - 🄼🄳💫⃤꙰ ꒱* ', newsletterName: channelRD.name }, externalAdReply: { title: "", body: dev, mediaUrl: null, description: null, previewType: "PHOTO", thumbnail: await (await fetch(icono)).buffer(), sourceUrl: redes, mediaType: 1, renderLargerThumbnail: false }, mentionedJid: null }}
 const pp = await conn.profilePictureUrl(m.chat, 'image').catch(_ => null) || 'https://files.catbox.moe/5biv5v.jpg'
 const nombre = `> ❀ @${usuario.split('@')[0]} Ha cambiado el nombre del grupo.\n> ✦ Ahora el grupo se llama:\n> *${m.messageStubParameters[0]}*.`
 
@@ -39,27 +38,27 @@ if (file.includes(uniqid)) {
 await fs.promises.unlink(path.join(sessionPath, file))
 console.log(`${chalk.yellow.bold('✎ Delete!')} ${chalk.greenBright(`'${file}'`)}\n${chalk.redBright('Que provoca el "undefined" en el chat.')}`)
 }}} if (chat.detect && m.messageStubType == 21) {
-rcanal.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
-await this.sendMessage(m.chat, { text: nombre, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
+await this.sendMessage(m.chat, { text: nombre, ...fake }, { quoted: shadow_xyz })
 } if (chat.detect && m.messageStubType == 22) {
-rcanal.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
-await this.sendMessage(m.chat, { image: { url: pp }, caption: foto, ...rcanal }, { quoted: shadow_xyzl })
+fake.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
+await this.sendMessage(m.chat, { image: { url: pp }, caption: foto, ...fake }, { quoted: shadow_xyzl })
 } if (chat.detect && m.messageStubType == 23) {
-rcanal.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
-await this.sendMessage(m.chat, { text: newlink, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
+await this.sendMessage(m.chat, { text: newlink, ...fake }, { quoted: shadow_xyz })
 } if (chat.detect && m.messageStubType == 25) {
-rcanal.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
-await this.sendMessage(m.chat, { text: edit, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
+await this.sendMessage(m.chat, { text: edit, ...fake }, { quoted: shadow_xyz })
 } if (chat.detect && m.messageStubType == 26) {
-rcanal.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
-await this.sendMessage(m.chat, { text: status, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, ...groupAdmins.map(v => v.id)]
+await this.sendMessage(m.chat, { text: status, ...fake }, { quoted: shadow_xyz })
 } if (chat.detect && m.messageStubType == 29) {
-rcanal.contextInfo.mentionedJid = [usuario, users, ...groupAdmins.map(v => v.id)].filter(Boolean)
-await this.sendMessage(m.chat, { text: admingp, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, users, ...groupAdmins.map(v => v.id)].filter(Boolean)
+await this.sendMessage(m.chat, { text: admingp, ...fake }, { quoted: shadow_xyz })
 return
 } if (chat.detect && m.messageStubType == 30) {
-rcanal.contextInfo.mentionedJid = [usuario, users, ...groupAdmins.map(v => v.id)].filter(Boolean)
-await this.sendMessage(m.chat, { text: noadmingp, ...rcanal }, { quoted: shadow_xyz })
+fake.contextInfo.mentionedJid = [usuario, users, ...groupAdmins.map(v => v.id)].filter(Boolean)
+await this.sendMessage(m.chat, { text: noadmingp, ...fake }, { quoted: shadow_xyz })
 } else { 
 if (m.messageStubType == 2) return
 console.log({messageStubType: m.messageStubType,
