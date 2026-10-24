@@ -1,6 +1,6 @@
 import fetch from "node-fetch"
 
-let handler = async (m, { conn, text usedPrefix, command }) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text?.trim()) return conn.reply(m.chat, "✿ *Por favor, proporciona el nombre de una canción o artista.*", m)
   try {
     const s = await (await fetch(`${api.url}/search/deezer?q=${encodeURIComponent(text)}&limit=1`)).json()

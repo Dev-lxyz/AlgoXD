@@ -60,42 +60,32 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const d = json.data
     const { filename, filetype, size, uploaded, owner, download_url } = d
     const mimetype = detectMime(d)
-    
-    const thumbBuf = await fetch('https://raw.githubusercontent.com/Dev-lxyz/file/main/files/ey7gd.jpeg').then(r => r.buffer())
-  const b64 = Buffer.from(thumbBuf).toString('base64')
 
- /*await conn.relayMessage(m.chat, { extendedTextMessage: { text: api.url + ` ° *Nombre:* ${filename}
- ° *Tipo:* ${filetype || mimetype}
- ° *Mime:* ${mimetype}
- ° *Peso:* ${size}
- ° *Subido:* ${uploaded}
- ° *Owner:* ${owner}`, matchedText: api.url, description: '🍡 *MEDIAFIRE DOWNLOADER*', title: dev, previewType: 'shadow', jpegThumbnail: b64, contextInfo: { quotedMessage: m.message, participant: m.sender, stanzaId: m.id, remoteJid: m.chat }} }, { quoted: m })*/
-    
-    
-  //  await m.reply(``)
-  
+    const thumbBuf = await fetch('https://raw.githubusercontent.com/Dev-lxyz/file/main/files/ey7gd.jpeg').then(r => r.buffer())
+    const b64 = Buffer.from(thumbBuf).toString('base64')
+
     const txt = ` ° *Nombre:* ${filename}
  ° *Tipo:* ${filetype || mimetype}
  ° *Mime:* ${mimetype}
  ° *Peso:* ${size}
  ° *Subido:* ${uploaded}
- ° *Owner:* ${owner}`,
- 
-    await conn.relayMessage(m.chat, { 
-      extendedTextMessage: { 
-        text: api.url + txt, 
-        matchedText: api.url, 
-        description: '🧃 *MEDIAFIRE DOWNLOADER*', 
-        title: dev, 
-        previewType: 'shadow', 
-        jpegThumbnail: b64, 
-        contextInfo: { 
-          quotedMessage: m.message, 
-          participant: m.sender, 
-          stanzaId: m.id, 
-          remoteJid: m.chat 
+ ° *Owner:* ${owner}`;
+
+    await conn.relayMessage(m.chat, {
+      extendedTextMessage: {
+        text: api.url + txt,
+        matchedText: api.url,
+        description: '🧃 *MEDIAFIRE DOWNLOADER*',
+        title: dev,
+        previewType: 'shadow',
+        jpegThumbnail: b64,
+        contextInfo: {
+          quotedMessage: m.message,
+          participant: m.sender,
+          stanzaId: m.id,
+          remoteJid: m.chat
         }
-      } 
+      }
     }, { quoted: m })
 
     await conn.sendMessage(m.chat, {

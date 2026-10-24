@@ -38,8 +38,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       }
     }, { quoted: m })
 
-    let api = await (await fetch(`${api.url}/download/savetube?url=${d.url}&type=audio`)).json()
-    let dl = api.data?.dl
+    let apiRes = await (await fetch(`${api.url}/download/savetube?url=${d.url}&type=audio`)).json()
+    let dl = apiRes.data?.dl
     if (!dl) throw new Error("No se pudo obtener el enlace de descarga")
 
     await conn.sendMessage(m.chat, {
