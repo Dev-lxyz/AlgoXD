@@ -1,0 +1,82 @@
+import fetch from 'node-fetch'
+
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  if (!args[0]) return m.reply(`*ꕥ Por favor, ingresa un término de búsqueda o el enlace de TikTok.*`)
+
+  let url = args[0]
+  if (!/tiktok\.com|vt\.tiktok\.com/i.test(url)) return m.reply('Ingrese un link de TikTok válido.')
+
+  try {
+    await m.reply('➪ Descargando contenido de TikTok...')
+
+    const apiUrl = `${api.url}/download/tiktok?url=${encodeURIComponent(url)}`
+    const res = await fetch(apiUrl)
+    const json = await res.json()
+    if (!json.status) throw 'ꕥ Enlace inválido o sin contenido descargable.'
+
+    const d = json.data
+    const stats = d.stats || {}
+
+    const cap = `    *乂 TIKTOK - INFO 乂*
+
+   *｡ Título ›* ${d.title || 'Sin título'}
+   *｡ Autor ›* ${d.author?.name || 'N/A'} (@${d.author?.username || 'N/A'})
+   *｡ Tipo ›* ${d.type || 'N/A'}
+   *｡ Duración ›* ${d.duration || 'N/A'}
+   *｡ Tamaño ›* ${d.size || 'N/A'}
+   *｡ Región ›* ${d.region || 'N/A'}
+   *｡ Fecha ›* ${d.date || 'N/A'}
+
+   *｡ Likes ›* ${stats.likes || '0'}
+   *｡ Comentarios ›* ${stats.comments || '0'}
+   *｡ Vistas ›* ${stats.views || '0'}
+   *｡ Favoritos ›* ${stats.favorites || '0'}
+   *｡ Shares ›* ${stats.shares || '0'}
+   *｡ Descargas ›* ${stats.downloads || '0'}
+
+   *｡ Audio ›* ${d.audio || 'N/A'}
+   *｡ Enlace ›* ${d.link}`.trim()
+
+    // ─── VIDEO ───
+    if (d.type === 'video') {
+      const videoUrl = d.media?.download || d.media?.watermark
+      if (!videoUrl) throw 'No se encontró enlace de video.'
+
+      await conn.sendFile(m.chat, videoUrl, 'tiktok.mp4', cap, m)
+    }
+
+    // ─── IMÁGENES (slideshow) ───
+    else if (d.type === 'image') {
+      const images = d.media?.images || []
+      if (!images.length) throw 'No se encontraron imágenes.'
+
+      const medias = images.map((img, i) => ({
+        image: { url: img },
+        caption: i === 0 ? cap : ''
+      }))
+
+      if (conn.sendAlbumMessage) {
+        await conn.sendAlbumMessage(m.chat, medias, { quoted: m })
+      } else {
+        for (const media of medias) {
+          await conn.sendMessage(m.chat, media, { quoted: m })
+          await new Promise(r => setTimeout(r, 100))
+        }
+      }
+    }
+
+    else {
+      throw `Tipo de contenido no soportado: ${d.type}`
+    }
+
+  } catch (e) {
+    m.reply(`> ✿︎ An unexpected error occurred while executing command *${usedPrefix + command}*.\n> *[Error: ${e.message}]*`)
+  }
+}
+
+handler.help = ['tiktok', 'tt']
+handler.tags = ['download', 'search']
+handler.command = ['tiktok', 'tt', 'tiktoks', 'tts']
+handler.group = true
+
+export default handler

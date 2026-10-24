@@ -38,9 +38,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
       }
     }, { quoted: m })
 
-    let api = await (await fetch(`${api.url}/download/aio/v3?url=${d.url}`)).json()
-    let dl = api.data?.url || api.data?.raw?.url
-    let sizeStr = api.data?.raw?.size || "0 MB"
+    let apiRes = await (await fetch(`${api.url}/download/aio/v3?url=${d.url}`)).json()
+    let dl = apiRes.data?.url || apiRes.data?.raw?.url
+    let sizeStr = apiRes.data?.raw?.size || "0 MB"
     if (!dl) throw new Error("No se pudo obtener el enlace")
 
     let sizeMB = parseFloat(sizeStr) * (sizeStr.toLowerCase().includes('gb') ? 1024 : 1)
