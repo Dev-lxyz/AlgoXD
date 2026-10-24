@@ -56,7 +56,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 }
 
-handler.command = ['gemini', 'resetgemini'']
+handler.command = ['gemini', 'resetgemini']
 handler.tags = ['ai']
 handler.help = ['gemini <texto>', 'resetgemini']
 export default handler

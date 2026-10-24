@@ -9,9 +9,9 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     let url = text.replace('--doc','').trim().split(/\s+/)[0]
     if (!/youtu|youtube/.test(url)) throw "Link inválido"
 
-    let api = await (await fetch(`${api.url}/download/ytdl.php?url=${encodeURIComponent(url)}&format=mp3`)).json()
-    if (!api.status) throw "No se pudo descargar"
-    let data = api.data
+    let apiRes = await (await fetch(`${api.url}/download/ytdl.php?url=${encodeURIComponent(url)}&format=mp3`)).json()
+    if (!apiRes.status) throw "No se pudo descargar"
+    let data = apiRes.data
 
     let size = "Desconocido"
     try {
