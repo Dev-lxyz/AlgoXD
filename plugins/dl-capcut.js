@@ -6,8 +6,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   try {
     await m.react("🕐")
     if (!/capcut\.com/.test(text)) return conn.reply(m.chat, "✿ Ingresa un link válido de CapCut.", m)
-    let api = await (await fetch(`${api.url}/download/capcut?url=${encodeURIComponent(text)}`)).json()
-    let d = api.data
+    let dl = await (await fetch(`${api.url}/download/capcut?url=${encodeURIComponent(text)}`)).json()
+    let d = dl.data
     if (!d?.videoUrl) throw new Error("No se pudo obtener el video")
     let caption = `*⌘ CAPCUT - DOWNLOAD*
 
