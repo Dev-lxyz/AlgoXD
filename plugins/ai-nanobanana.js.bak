@@ -23,7 +23,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (!imageUrl) {
           return conn.reply(m.chat, `⚠︎ Error al subir la imagen.`, m)
         }
-        const apiUrl = `${api.url}/ai/nanobanana?iurl=${encodeURIComponent(imageUrl)}&prompt=${encodeURIComponent(text)}`
+        const apiUrl = `${api.url}/ai/nanobanana?urll=${encodeURIComponent(imageUrl)}&prompt=${encodeURIComponent(text)}`
         
         const res = await fetch(apiUrl)
         const json = await res.json()
