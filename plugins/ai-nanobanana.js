@@ -2,11 +2,7 @@ import fetch from 'node-fetch'
 import { FormData, Blob } from 'formdata-node'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) {
-      return conn.reply(m.chat, 
-        `🍡 Por favor responde a una imagen con el prompt.`, 
-        m
-      )
+    if (!text) { return conn.reply(m.chat, `🍡 Por favor responde a una imagen con el prompt.`, m)
     }
     
     let q = m.quoted ? m.quoted : m
@@ -24,7 +20,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
           return conn.reply(m.chat, `⚠︎ Error al subir la imagen.`, m)
         }
         const apiUrl = `${api.url}/ai/nanobanana?url=${encodeURIComponent(imageUrl)}&prompt=${encodeURIComponent(text)}`
-        
         const res = await fetch(apiUrl)
         const json = await res.json()
 

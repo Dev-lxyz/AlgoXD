@@ -20,8 +20,18 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 > 🕸️ Descargando audio... `
     }, { quoted: m })
 
-    const d = await (await fetch(`${api.url}/download/aplmate?url=${song.link}`)).json()
-    await conn.sendMessage(m.chat, { audio: { url: d.data.downloads[0].url }, mimetype: "audio/mpeg" }, { quoted: m })
+    let dlUrl = null
+    try {
+      const r1 = await (await fetch(`${api.url}/download/applemusic?url=${encodeURIComponent(song.link)}`)).json()
+      if (r1.status && r1.data?.dl_url) dlUrl = r1.data.dl_url
+    } catch {}
+    if (!dlUrl) {
+      const r2 = await (await fetch(`${api.url}/download/aplmate?url=${encodeURIComponent(song.link)}`)).json()
+      dlUrl = r2.result?.tracks?.[0]?.download_url || r2.data?.downloads?.[0]?.url
+      if (!dlUrl) throw "No se pudo obtener link de descarga"
+    }
+
+    await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: "audio/mpeg", fileName: `${song.title}.mp3` }, { quoted: m })
   } catch (e) {
     conn.reply(m.chat, `> ✿︎ An unexpected error occurred while executing command *${usedPrefix + command}*.\n> *[Error: ${e.message || e}]*`, m)
   }

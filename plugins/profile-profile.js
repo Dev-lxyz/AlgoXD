@@ -29,8 +29,6 @@ let handler = async (m, { conn, args, usedPrefix }) => {
     user.description ||= 'Sin descripción :v'
     user.birth ||= 'Sin especificar :< (#setbirth)'
     user.genre ||= 'Sin especificar'
-    user.terianx ||= null
-    user.terianxGenero ||= null
     user.marry ||= null
 
     // Info básica
@@ -103,15 +101,6 @@ let handler = async (m, { conn, args, usedPrefix }) => {
 🎂 Cumpleaños: ${cumpleanos}
 ⚧ Género: ${genero}
 💍 casado: ${casado}
-
-──────────────
- 𝐓𝐇𝐄𝐑𝐈𝐀𝐍
-🔹 Soy Un: ${user.terianx || 'No tiene'}
-🔹 Género: ${
-      user.terianxGenero
-        ? user.terianxGenero.charAt(0).toUpperCase() + user.terianxGenero.slice(1)
-        : 'No definido'
-    }
 
 ──────────────
  𝐏𝐑𝐎𝐆𝐑𝐄𝐒𝐎

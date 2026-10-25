@@ -1,14 +1,37 @@
-var handler = async (m, { conn, args }) => {
-let group = m.chat
-const pp = await conn.profilePictureUrl(group, 'image').catch((_) => 'https://files.catbox.moe/xr2m6u.jpg')
-let link = 'https://chat.whatsapp.com/' + await conn.groupInviteCode(group)
-let message = `\t*⌁☍꒷₊˚ Link del Grupo ꒷₊˚⌁☍*\n\n> \`Link:\` ${link}`
-await conn.sendMessage(group, { image: { url: pp }, caption: message })
+import { prepareWAMessageMedia } from '@whiskeysockets/baileys'
+
+let handler = async (m, { conn }) => {
+  try {
+    const code = await conn.groupInviteCode(m.chat)
+    const link = `https://chat.whatsapp.com/${code}`
+    
+    let linkPreview
+    if (global.banner) {
+      const media = await prepareWAMessageMedia(
+        { image: { url: global.banner } }, 
+        { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
+      )
+      linkPreview = {
+        'canonical-url': link,
+        'matched-text': link,
+        title: `🌿 Group Link`,
+        description: `🔗 Link del grupo`,
+        jpegThumbnail: media.imageMessage?.jpegThumbnail ? Buffer.from(media.imageMessage.jpegThumbnail) : undefined,
+        highQualityThumbnail: media.imageMessage
+      }
+    }
+
+    let teks = `﹒⌗﹒🌿 .ৎ˚₊‧  Aquí tienes el link del grupo:\n\n𐚁 ֹ ִ \`GROUP LINK\` ! ୧ ֹ ִ🔗\n☘️ \`Solicitado por :\` @${m.sender.split('@')[0]}\n\n🌱 \`Enlace :\` ${link}`
+
+    await conn.sendMessage(m.chat, { text: teks, mentions: [m.sender], linkPreview }, { quoted: m })
+  } catch (e) {
+    m.reply(`> Error: ${e.message}`)
+  }
 }
 
 handler.help = ['link']
-handler.tags = ['group']
-handler.command = ['link', 'enlace']
+handler.tags = ['grupo']
+handler.command = ['link', 'linkgc']
 handler.group = true
 handler.botAdmin = true
 

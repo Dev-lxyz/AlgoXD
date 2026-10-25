@@ -1,58 +1,69 @@
-
-import PhoneNumber from 'awesome-phonenumber';
-
-const handler = async (m, { conn }) => {
-  const name = 'GojoBot - MD | ᥆𝖿𝖿іᥴіᥲᥣ';
-  const numCreador = '51900922660';
-  const empresa = 'ɢᴏᴊᴏ ʙᴏᴛ ɪɴɪᴄ.';
-  const about = '💫 𝑫𝒆𝒔𝒂𝒓𝒓𝒐𝒍𝒍𝒂𝒅𝒐𝒓 𝒐𝒇𝒇𝒊𝒄𝒊𝒂𝒍 𝒅𝒆 𝑮𝒐𝒋𝒐𝑩𝒐𝒕 - 𝑴𝑫';
-  const correo = 'carlosramirezvillanueva30@gmail.com';
-  const web = 'https://CarlosRv.vercel.app/';
-  const direccion = 'Tokyo, Japón 🇯🇵';
-  const fotoPerfil = 'https://files.catbox.moe/2vwn2d.jpg';
-
-  const vcard = `
-BEGIN:VCARD
-VERSION:3.0
-N:;${name};;;
-FN:${name}
-ORG:${empresa}
-TITLE:CEO & Fundador
-TEL;waid=${numCreador}:${new PhoneNumber('+' + numCreador).getNumber('international')}
-EMAIL:${correo}
-URL:${web}
-NOTE:${about}
-ADR:;;${direccion};;;;
-X-ABADR:ES
-X-WA-BIZ-NAME:${name}
-X-WA-BIZ-DESCRIPTION:${about}
-END:VCARD`.trim();
-
-  const contactMessage = {
-    displayName: name,
-    vcard
-  };
-  m.react('☁️');
-  await conn.sendMessage(m.chat, {
-    contacts: {
-      displayName: name,
-      contacts: [contactMessage]
-    },
-    contextInfo: {
-    mentionedJid: [m.sender],
-      externalAdReply: {
-        title: '📌 ƈσɳƚαƈƚσ ԃҽ ɱι ƈɾҽαԃσɾ •💫',
-        body: '',
-        mediaType: 1,
-        thumbnailUrl: fotoPerfil,
-        renderLargerThumbnail: true,
-        sourceUrl: web
+let handler = async (m, { conn }) => {
+  await conn.relayMessage(
+    m.chat,
+    {
+      "interactiveMessage": {
+        "header": {
+          "title": "⁌⁍  ㅤׅ  ㅤׄ   𝗢 𝗪 𝗡 𝗘 𝗥  🌿  𝅼   ෭ "
+        },
+        "body": {
+          "text": "```</> Contacto oficial - Soporte / Desarrollo```"
+        },
+        "footer": {
+          "text": dev
+        },
+        "nativeFlowMessage": {
+          "buttons": [
+            {
+              "name": "booking_confirmation",
+              "buttonParamsJson": JSON.stringify({
+                start_datetime: "2026-06-12T12:32:04.983Z",
+                end_datetime: "2026-06-12T12:42:04.983Z",
+                location: "🇵🇪 Peru 🇵🇪",
+                booking_url: "https://wa.me/51934053286",
+                phone_number: "51934053286",
+                booking_management_url: "https://wa.me/51934053286",
+                description: "*◦ 🍃 Name :* ɪ'ᴍ sʜᴀᴅᴏᴡ 🥢\n*◦ 🍜 Status :* _Creador & owner_\n",
+                email: "",
+                display_text: "🌱 ᴍᴀɪɴ ᴏᴡɴᴇʀ"
+              })
+            }
+          ],
+          "messageParamsJson": "{}"
+        }
       }
+    },
+    {
+      "additionalNodes": [
+        {
+          "tag": "biz",
+          "attrs": {},
+          "content": [
+            {
+              "tag": "interactive",
+              "attrs": {
+                "type": "native_flow",
+                "v": "1"
+              },
+              "content": [
+                {
+                  "tag": "native_flow",
+                  "attrs": {
+                    "v": "9",
+                    "name": "mixed"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
-  }, { quoted: fkontak });
-};
+  )
+}
 
-handler.help = ['creador'];
-handler.tags = ['info'];
-handler.command = ['creador', 'creator', 'owner'];
-export default handler;
+handler.help = ['owner']
+handler.tags = ['info']
+handler.command = ['owner', 'creator', 'creador']
+
+export default handler

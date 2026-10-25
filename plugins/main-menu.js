@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import { prepareWAMessageMedia } from '@whiskeysockets/baileys'
 
 let handler = async (m, { conn, usedPrefix }) => {
   try {
@@ -8,14 +9,10 @@ let handler = async (m, { conn, usedPrefix }) => {
     let totalreg = Object.keys(global.db.data.users).length
     let totalCommands = Object.keys(global.plugins).length
     let groupsCount = Object.values(conn.chats).filter(v => v.id.endsWith('@g.us')).length
-
-    let fechaObj = new Date()
-    let hora = fechaObj.toLocaleTimeString('en-US', { timeZone: 'America/Lima' })
-    let fecha = fechaObj.toLocaleDateString('en-US', { timeZone: 'America/Lima' })
-    let date = `${fecha} ${hora}`
+    
     let mediaList = [
       'https://raw.githubusercontent.com/Dev-lxyz/file/main/files/b6kxa.mp4',
-      'https://raw.githubusercontent.com/AkiraDevX/file/main/files/fgsde.mp4'
+      'https://raw.githubusercontent.com/Dev-lxyz/file/main/files/adcs8.jpeg'
     ]
 
     let banner = mediaList[Math.floor(Math.random() * mediaList.length)]
@@ -23,10 +20,13 @@ let handler = async (m, { conn, usedPrefix }) => {
     let grupos = {}
     for (let plugin of Object.values(global.plugins || {})) {
       if (!plugin.help || !plugin.tags) continue
-      for (let tag of plugin.tags) {
+      let helps = Array.isArray(plugin.help) ? plugin.help : [plugin.help]
+      let tags = Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags]
+      
+      for (let tag of tags) {
         if (!grupos[tag]) grupos[tag] = []
-        for (let help of plugin.help) {
-          if (/^\$|^=>|^>/.test(help)) continue
+        for (let help of helps) {
+          if (typeof help === 'string' && /^\$|^=>|^>/.test(help)) continue
           grupos[tag].push(`${usedPrefix}${help}`)
         }
       }
@@ -38,7 +38,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 
     const secciones = Object.entries(grupos).map(([tag, cmds]) => {
       return `   ⎯       *【  _${tag.toUpperCase()}_ 】*\n`
-        + cmds.map(cmd => `*╭─*\n*│  °* ${cmd}`).join('\n') 
+        + cmds.map(cmd => `*│  °* ${cmd}`).join('\n') 
         + `\n*╰─┈⟢*`
     }).join('\n\n')
 
@@ -49,13 +49,22 @@ let handler = async (m, { conn, usedPrefix }) => {
    *𑄝 𝚃𝙸𝙴𝙼𝙿𝙾 𝙰𝙲𝚃𝙸𝚅𝙾 ──* ${uptime}
    *𑄝 𝚃𝚈𝙿𝙴 ──* ${(conn.user.jid == global.conn.user.jid ? 'Bot Principal' : 'Sub-Bot')}
    *𑄝 𝚄𝚂𝚄𝙰𝚁𝙸𝙾𝚂 ──* ${totalreg}
-   *𑄝 𝙶𝚁𝚄𝙿𝙾𝚂 ──* ${groupsCount}
+   *𑄝 𝙶𝚁𝚄🇵‌𝙾𝚂 ──* ${groupsCount}
    *𑄝 𝙲𝙾𝙼𝙰𝙽𝙳𝙾𝚂 ──* ${totalCommands}
-   ￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣￣
+   ￣￣￣￣￣￣￣￣￣￣￣
 
 ${secciones}`.trim()
 
     let isVideo = banner.endsWith('.mp4') || banner.endsWith('.webm')
+
+    let linkPreview = (!isVideo && banner) ? (await prepareWAMessageMedia({ image: { url: banner }}, { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }).then(({ imageMessage }) => ({ 
+      'canonical-url': api.url, 
+      'matched-text': api.url, 
+      title: botname, 
+      description: dev, 
+      jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined, 
+      highQualityThumbnail: imageMessage || undefined 
+    }))) : undefined
 
     await conn.sendMessage(m.chat,
       isVideo
@@ -67,29 +76,22 @@ ${secciones}`.trim()
               mentionedJid: [m.sender],
               isForwarded: true,
               forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363421367237421@newsletter',
+                newsletterJid: channelRD.id
                 serverMessageId: '',
-                newsletterName: botname
+                newsletterName: channelRD.name
               }
             }
           }
         : {
-            text: menu,
+            text: `${api.url}\n` + menu,
+            linkPreview: linkPreview,
             contextInfo: {
               mentionedJid: [m.sender],
               isForwarded: true,
               forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363421367237421@newsletter',
+                newsletterJid: channelRD.id,
                 serverMessageId: '',
-                newsletterName: botname
-              },
-              externalAdReply: {
-                title: botname,
-                body: dev,
-                thumbnail: await (await fetch(banner)).buffer(),
-                mediaType: 1,
-                renderLargerThumbnail: true,
-                showAdAttribution: false
+                newsletterName: channelRD.name
               }
             }
           },
@@ -98,7 +100,7 @@ ${secciones}`.trim()
 
   } catch (e) {
     await conn.sendMessage(m.chat, {
-      text: `🌷 Error al enviar el menú: ${e.message}`,
+      text: `🌾 Error al enviar el menú: ${e.message}`,
       mentions: [m.sender]
     }, { quoted: m })
   }
@@ -114,5 +116,5 @@ function clockString(ms) {
   let seconds = Math.floor((ms / 1000) % 60)
   let minutes = Math.floor((ms / (1000 * 60)) % 60)
   let hours = Math.floor((ms / (1000 * 60 * 60)) % 24)
-  return `${hours}H, ${minutes}M, ${seconds}S`
+  return `${hours}H ${minutes}M ${seconds}S`
 }

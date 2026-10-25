@@ -1,4 +1,5 @@
 import nodeFetch from 'node-fetch';
+import axios from 'axios';
 import { promises as fs } from 'fs';
 
 const FILE_PATH = './lib/characters.json';
@@ -33,46 +34,27 @@ function formatTag(tag) {
 }
 
 async function buscarImagenDelirius(tag) {
-  const formattedTag = formatTag(tag);
-  const urls = [
-    'https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&tags=' + formattedTag,
-    'https://danbooru.donmai.us/posts.json?tags=' + formattedTag,
-    global.db?.APIs?.delirus?.url + '/search/gelbooru?query=' + formattedTag,
+  const query = formatTag(tag);
+  const sources = [
+    { url: `https://safebooru.org/index.php?page=dapi&s=post&q=index&json=1&tags=${query}&limit=100`, extract: (data) => {
+        const posts = Array.isArray(data) ? data : data?.post || [];
+        return posts.map(i => i?.file_url || (i?.directory && i?.image ? `https://safebooru.org/images/${i.directory}/${i.image}` : null)).filter(u => typeof u === 'string' && /\.(jpe?g|png)(\?.*)?$/i.test(u));
+    }},
+    { url: `https://danbooru.donmai.us/posts.json?tags=${query}&limit=100`, extract: (data) => {
+        const posts = Array.isArray(data) ? data : [];
+        return posts.map(i => i?.file_url || i?.large_file_url).filter(u => typeof u === 'string' && /\.(jpe?g|png)(\?.*)?$/i.test(u));
+    }},
+    { url: `https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=${query}&limit=100&api_key=98f554258c88c44f4dd28ccde0c28f36682b2a992490ab35ebcc7baf7e196a86d7550b174bce577b8cc3f544e9b3ad0f6aeb09ad63bf89a9141cc3eddb6fbfd2&user_id=1917269`, extract: (data) => {
+        const posts = Array.isArray(data) ? data : data?.post || data?.data || [];
+        return posts.map(i => i?.file_url).filter(u => typeof u === 'string' && /\.(jpe?g|png)(\?.*)?$/i.test(u));
+    }}
   ];
-
-  for (const url of urls) {
-    try {
-      const response = await nodeFetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          'Accept': 'application/json',
-        },
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!response.ok || !contentType.includes('json')) continue;
-
-      const data = await response.json();
-      const items = Array.isArray(data) ? data : data?.variants || data?.posts || [];
-
-      const imageUrls = items
-        .map(
-          (item) =>
-            item?.large_file_url ||
-            item?.file_url ||
-            item?.file_url ||
-            item?.media_asset?.[0]?.url
-        )
-        .filter((url) => typeof url === 'string' && /\.(jpe?g|png)$/.test(url));
-
-      if (imageUrls.length) return imageUrls;
-    } catch (error) {
-      // Continue to next URL on error
-    }
-  }
-
-  return [];
+  const results = await Promise.allSettled(sources.map(async (source) => {
+    const res = await axios.get(source.url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }, timeout: 8000 });
+    return source.extract(res.data);
+  }));
+  const allUrls = results.filter(r => r.status === 'fulfilled' && r.value.length > 0).flatMap(r => r.value);
+  return [...new Set(allUrls)];
 }
 
 const handler = async (message, { conn, usedPrefix, command }) => {

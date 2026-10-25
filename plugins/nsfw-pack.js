@@ -7,7 +7,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     }
 
     await m.react('🕒')
-    const res = await fetch(`${global.APIs.light.url}/random/nsfw/waifu?nsfw=true`)
+    const res = await fetch(`${api.url}/random/nsfw/waifu?nsfw=true`)
     const json = await res.json()
 
     if (!json.status || !json.result) {

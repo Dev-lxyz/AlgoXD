@@ -2,20 +2,19 @@ import { watchFile, unwatchFile } from "fs"
 import chalk from "chalk"
 import { fileURLToPath } from "url"
 import fs from "fs"
-import { prepareWAMessageMedia } from '@whiskeysockets/baileys'
 
 global.botNumber = "" 
 global.owner = ["51963315293", "51934053286"]
 global.prems = ["51934053286"]
 
 
-global.prefix = ["!"]
+global.prefix = ["^[#!./-]"]
 global.vs = "^3.0 • Latest"
 global.sessions = "Sessions/Principal"
 global.jadi = "Sessions/SubBot"
 global.kanekiAIJadibts = true
 
-global.botname = "𖹭  ׄ  ְ 🍜 𝐆𝐨𝐣𝐨𝐁𝐨𝐭-𝐌𝐃 ✩"
+global.botname = "𓏲 🎃᪶   ๋  # Satoru Gojo-Bot ⎯꯭༉"
 global.namebot = "Satoru Gojo"
 global.dev = "ᴍᴀᴅᴇ ᴡɪᴛʜ ʙʏ ᴄᴀʀʟᴏs.ʀᴠ ©"
 global.currency = "g᥆𝗍іᥴᥲs"
@@ -48,6 +47,17 @@ global.ch = {
 
 global.gojo = prepareWAMessageMedia
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
+
+
+global.mess = {
+rowner: `🎋 El comando solo puede ser usado por el creadores del bot.`,
+owner: `🎋 El comando solo puede ser usado por el creador.`,
+premium: `🎋 El comando solo puede ser usado por usuarios premium.`,
+group: `🎋 El comando solo puede ser usado en grupos.`,
+admin: `🎋 Este comando solo puede ser usado por los administradores del grupo.`,
+botAdmin: `🎋 Para ejecutar este comando debo ser administrador del grupo.`
+}
+
 
 let file = fileURLToPath(import.meta.url)
 watchFile(file, () => {

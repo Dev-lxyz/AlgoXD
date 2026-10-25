@@ -1,17 +1,18 @@
-import speed from 'performance-now'
 import os from 'os'
+import { performance } from 'perf_hooks'
 
 let handler = async (m, { conn }) => {
-  const start = Date.now()
+  const t1 = performance.now()
+  const msg = await conn.sendMessage(m.chat, { text: '`🌱 Midiendo...`' }, { quoted: m })
+  const t2 = performance.now()
 
-
-  await conn.reply(m.chat, '`🌱 ¡Pong!`', m)
-  const latensi = Date.now() - start
-  let ramTotal = (os.totalmem() / 1024 / 1024).toFixed(0)
-  let ramLibre = (os.freemem() / 1024 / 1024).toFixed(0)
-  let ramUso = ramTotal - ramLibre
-
-  let uptime = process.uptime()
+  const latensi = (t2 - t1).toFixed(2)
+  const ramTotal = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2)
+  const ramLibre = (os.freemem() / 1024 / 1024 / 1024).toFixed(2)
+  const ramUso = (os.totalmem() - os.freemem()) / 1024 / 1024
+  const cpus = os.cpus()
+  const cpuModel = cpus[0].model.split(' @')[0]
+  const load = os.loadavg()[0].toFixed(2)
 
   let pingEmoji =
     latensi < 50 ? '🟢 Excelente' :
@@ -21,15 +22,17 @@ let handler = async (m, { conn }) => {
 
   let teks = `*'ׄ𐚁ִㅤS T A T U S - P I N Gׄ ₍ ᐢ..ᐢ ₎'*
 
-  *｡ speed :* ${latensi} ms (${pingEmoji})
-  *｡ Runtime :* ${formatTime(uptime)}
-  *｡ Plataforma :* ${os.platform()} (${os.arch()})
-  *｡ Node v :* ${process.version}
-  *｡ Ram :* ${ramUso} MB / ${ramTotal} MB
+*｡ speed :* ${latensi} ms (${pingEmoji})
+*｡ Runtime :* ${clockString(process.uptime() * 1000)}
+*｡ CPU :* ${cpuModel} (${load}%)
+*｡ Plataforma :* ${os.platform()} (${os.arch()})
+*｡ Node :* ${process.version}
+*｡ Ram :* ${ramUso.toFixed(0)} MB / ${ramTotal} GB
+*｡ Free :* ${ramLibre} GB
 
-${dev}`
+> ${dev}`
 
-  await conn.reply(m.chat, teks, m)
+  await conn.sendMessage(m.chat, { text: teks, edit: msg.key })
 }
 
 handler.help = ['ping']
@@ -38,18 +41,10 @@ handler.command = ['ping', 'p']
 
 export default handler
 
-function formatTime(seconds) {
-  seconds = Number(seconds)
-
-  let d = Math.floor(seconds / (3600 * 24))
-  let h = Math.floor(seconds % (3600 * 24) / 3600)
-  let m = Math.floor(seconds % 3600 / 60)
-  let s = Math.floor(seconds % 60)
-
-  return [
-    d ? `${d}d` : '',
-    h ? `${h}h` : '',
-    m ? `${m}m` : '',
-    s ? `${s}s` : ''
-  ].filter(Boolean).join(' ')
+function clockString(ms) {
+  let d = Math.floor(ms / 86400000)
+  let h = Math.floor(ms / 3600000) % 24
+  let m = Math.floor(ms / 60000) % 60
+  let s = Math.floor(ms / 1000) % 60
+  return [d ? `${d}d ` : '', h ? `${h}h ` : '', m ? `${m}m ` : '', `${s}s`].join('').trim()
 }

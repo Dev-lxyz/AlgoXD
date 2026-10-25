@@ -29,8 +29,8 @@ export async function before(m, { conn }) {
     m.chat,
     {
       extendedTextMessage: {
-        text: `https://api.gojo.biz.id\n❀ ᥱᥣ ᥴ᥆mᥲᥒძ᥆ *${command}* ᥒ᥆ ᥱ᥊іs𝗍ᥱ.\n> ⚥︎ ᥙsᥲ *${usedPrefix}ʜᴇʟᴘ* ⍴ᥲrᥲ ᥎ᥱr ᥣᥲ ᥣіs𝗍ᥲ ძᥱ ᥴ᥆mᥲᥒძ᥆s.`,
-        matchedText: 'https://api.gojo.biz.id',
+        text: `${api.url}\n❀ ᥱᥣ ᥴ᥆mᥲᥒძ᥆ *${command}* ᥒ᥆ ᥱ᥊іs𝗍ᥱ.\n> ⚥︎ ᥙsᥲ *${usedPrefix}ʜᴇʟᴘ* ⍴ᥲrᥲ ᥎ᥱr ᥣᥲ ᥣіs𝗍ᥲ ძᥱ ᥴ᥆mᥲᥒძ᥆s.`,
+        matchedText: api.url,
         description: '🥢 Welcome, to Satoru Gojou.',
         title: botname,
         previewType: 'shadow',
