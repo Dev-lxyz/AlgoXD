@@ -74,7 +74,7 @@ ${secciones}`.trim()
       highQualityThumbnail: imageMessage || undefined
     }))) : undefined
 
-    let contextInfoBase = { mentionedJid: [m.sender], isForwarded: true }
+    let contextInfoBase = { mentionedJid: [m.sender], isForwarded: false }
 
     let messageContent
     if (isVideo) {
