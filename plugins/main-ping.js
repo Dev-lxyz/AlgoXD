@@ -12,10 +12,6 @@ let handler = async (m, { conn }) => {
   const ramUsoMB = (os.totalmem() - os.freemem()) / 1024 / 1024
   const ramUsoGB = ((os.totalmem() - os.freemem()) / 1024 / 1024 / 1024).toFixed(2)
 
-  const cpus = os.cpus() || []
-  const cpuModel = (cpus[0]?.model || 'Desconocido').split(' @')[0]
-
-  // ✅ loadavg no existe en Windows → devuelve [0,0,0]
   const isWindows = os.platform() === 'win32'
   const loadRaw = isWindows ? null : os.loadavg()[0]
   const load = isWindows
@@ -32,16 +28,14 @@ let handler = async (m, { conn }) => {
 
 *｡ Speed :* ${latensi} ms (${pingEmoji})
 *｡ Runtime :* ${clockString(process.uptime() * 1000)}
-*｡ CPU :* ${cpuModel}
 *｡ Load :* ${load}
 *｡ Plataforma :* ${os.platform()} (${os.arch()})
 *｡ Node :* ${process.version.replace(/^v/, '')}
 *｡ RAM :* ${ramUsoMB.toFixed(0)} MB (${ramUsoGB} GB) / ${ramTotal} GB
 *｡ Free :* ${ramLibre} GB
 
-> ${global.dev || global.devName || '© Dev'}`
+> ${global.dev}`
 
-  // ✅ Fallback si el fork no soporta "edit"
   try {
     await conn.sendMessage(m.chat, { text: teks, edit: msg.key })
   } catch {
