@@ -7,7 +7,7 @@ let handler = async (m, { conn, args }) => {
   for (const mem of participants) {
     teks += `┊ꕥ @${mem.id.split('@')[0]}\n`
   }
-  teks += `╰⸼ ┄ ┄ ꒰ \`${version}\` ꒱ ┄ ┄⸼`
+  teks += `╰⸼ ┄ ┄ ꒰ \`${vs}\` ꒱ ┄ ┄⸼`
   return conn.reply(m.chat, teks, m, { mentions: [m.sender, ...participants.map(p => p.id)] })
 }
 
