@@ -74,19 +74,7 @@ ${secciones}`.trim()
       highQualityThumbnail: imageMessage || undefined
     }))) : undefined
 
-    let newsletterInfo = null
-    if (global.channelRD && global.channelRD.id) {
-      newsletterInfo = {
-        newsletterJid: global.channelRD.id,
-        serverMessageId: '',
-        newsletterName: global.channelRD.name || 'Channel'
-      }
-    }
-
     let contextInfoBase = { mentionedJid: [m.sender], isForwarded: true }
-    if (newsletterInfo) {
-      contextInfoBase.forwardedNewsletterMessageInfo = newsletterInfo
-    }
 
     let messageContent
     if (isVideo) {
@@ -99,7 +87,8 @@ ${secciones}`.trim()
     } else {
       messageContent = {
         text: `${global.api?.url || ''}\n` + menu,
-        linkPreview: linkPreview
+        linkPreview: linkPreview,
+        contextInfo: contextInfoBase
       }
     }
 
