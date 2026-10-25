@@ -9,30 +9,44 @@ let handler = async (m, { conn }) => {
   const latensi = (t2 - t1).toFixed(2)
   const ramTotal = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2)
   const ramLibre = (os.freemem() / 1024 / 1024 / 1024).toFixed(2)
-  const ramUso = (os.totalmem() - os.freemem()) / 1024 / 1024
-  const cpus = os.cpus()
-  const cpuModel = cpus[0].model.split(' @')[0]
-  const load = os.loadavg()[0].toFixed(2)
+  const ramUsoMB = (os.totalmem() - os.freemem()) / 1024 / 1024
+  const ramUsoGB = ((os.totalmem() - os.freemem()) / 1024 / 1024 / 1024).toFixed(2)
+
+  const cpus = os.cpus() || []
+  const cpuModel = (cpus[0]?.model || 'Desconocido').split(' @')[0]
+
+  // ✅ loadavg no existe en Windows → devuelve [0,0,0]
+  const isWindows = os.platform() === 'win32'
+  const loadRaw = isWindows ? null : os.loadavg()[0]
+  const load = isWindows
+    ? 'N/A (Windows)'
+    : `${loadRaw.toFixed(2)}%`
 
   let pingEmoji =
-    latensi < 50 ? '🟢 Excelente' :
-    latensi < 120 ? '🟡 Bueno' :
-    latensi < 200 ? '🟠 Medio' :
+    latensi < 200 ? '🟢 Excelente' :
+    latensi < 300 ? '🟡 Bueno' :
+    latensi < 500 ? '🟠 Medio' :
     '🔴 Lento'
 
-  let teks = `*'ׄ𐚁ִㅤS T A T U S - P I N Gׄ ₍ ᐢ..ᐢ ₎'*
+  const teks = `*'ׄ𐚁ִㅤS T A T U S - P I N Gׄ ₍ ᐢ..ᐢ ₎'*
 
-*｡ speed :* ${latensi} ms (${pingEmoji})
+*｡ Speed :* ${latensi} ms (${pingEmoji})
 *｡ Runtime :* ${clockString(process.uptime() * 1000)}
-*｡ CPU :* ${cpuModel} (${load}%)
+*｡ CPU :* ${cpuModel}
+*｡ Load :* ${load}
 *｡ Plataforma :* ${os.platform()} (${os.arch()})
-*｡ Node :* ${process.version}
-*｡ Ram :* ${ramUso.toFixed(0)} MB / ${ramTotal} GB
+*｡ Node :* ${process.version.replace(/^v/, '')}
+*｡ RAM :* ${ramUsoMB.toFixed(0)} MB (${ramUsoGB} GB) / ${ramTotal} GB
 *｡ Free :* ${ramLibre} GB
 
-> ${dev}`
+> ${global.dev || global.devName || '© Dev'}`
 
-  await conn.sendMessage(m.chat, { text: teks, edit: msg.key })
+  // ✅ Fallback si el fork no soporta "edit"
+  try {
+    await conn.sendMessage(m.chat, { text: teks, edit: msg.key })
+  } catch {
+    await conn.sendMessage(m.chat, { text: teks }, { quoted: m })
+  }
 }
 
 handler.help = ['ping']
