@@ -69,45 +69,46 @@ ${secciones}`.trim()
       'canonical-url': global.api?.url || '',
       'matched-text': global.api?.url || '',
       title: global.botname || global.namebot || 'Bot',
-      description: global.dev || '© Dev',
+      description: global.dev || 'Dev',
       jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
       highQualityThumbnail: imageMessage || undefined
     }))) : undefined
 
-    // ✅ Newsletter con fallback seguro
-    const newsletterInfo = global.channelRD?.id ? {
-      newsletterJid: global.channelRD.id,
-      serverMessageId: '',
-      newsletterName: global.channelRD.name || 'Channel'
-    } : undefined
+    let newsletterInfo = null
+    if (global.channelRD && global.channelRD.id) {
+      newsletterInfo = {
+        newsletterJid: global.channelRD.id,
+        serverMessageId: '',
+        newsletterName: global.channelRD.name || 'Channel'
+      }
+    }
 
-    await conn.sendMessage(m.chat,
-      isVideo
-        ? {
-            video: { url: banner },
-            gifPlayback: true,
-            caption: menu,
-            contextInfo: {
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              ...(newsletterInfo && { forwardedNewsletterMessageInfo: newsletterInfo })
-            }
-          }
-        : {
-            text: `${global.api?.url || ''}\n` + menu,
-            linkPreview: linkPreview,
-            contextInfo: {
-              mentionedJid: [m.sender],
-              isForwarded: true,
-              ...(newsletterInfo && { forwardedNewsletterMessageInfo: newsletterInfo })
-            }
-          },
-      { quoted: m }
-    )
+    let contextInfoBase = { mentionedJid: [m.sender], isForwarded: true }
+    if (newsletterInfo) {
+      contextInfoBase.forwardedNewsletterMessageInfo = newsletterInfo
+    }
+
+    let messageContent
+    if (isVideo) {
+      messageContent = {
+        video: { url: banner },
+        gifPlayback: true,
+        caption: menu,
+        contextInfo: contextInfoBase
+      }
+    } else {
+      messageContent = {
+        text: `${global.api?.url || ''}\n` + menu,
+        linkPreview: linkPreview,
+        contextInfo: contextInfoBase
+      }
+    }
+
+    await conn.sendMessage(m.chat, messageContent, { quoted: m })
 
   } catch (e) {
     await conn.sendMessage(m.chat, {
-      text: `🌾 Error al enviar el menú: ${e.message}`,
+      text: `Error al enviar el menu: ${e.message}`,
       mentions: [m.sender]
     }, { quoted: m })
   }
