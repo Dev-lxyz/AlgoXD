@@ -99,8 +99,7 @@ ${secciones}`.trim()
     } else {
       messageContent = {
         text: `${global.api?.url || ''}\n` + menu,
-        linkPreview: linkPreview,
-        contextInfo: contextInfoBase
+        linkPreview: linkPreview
       }
     }
 
