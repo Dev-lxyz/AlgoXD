@@ -4,7 +4,7 @@ import { fileURLToPath } from "url"
 import fs from "fs"
 
 global.botNumber = "" 
-global.owner = ["51963315293", "51934053286", "51922902497"]
+global.owner = ["51963315293", "51934053286", "51922902497", "51930958596", "51941472141"]
 global.prems = ["51934053286"]
 
 
@@ -17,7 +17,7 @@ global.kanekiAIJadibts = true
 global.botname = "𓏲 🎃᪶   ๋  # Satoru Gojo-Bot ⎯꯭༉"
 global.namebot = "Satoru Gojo"
 global.dev = "ᴍᴀᴅᴇ ᴡɪᴛʜ ʙʏ ᴄᴀʀʟᴏs.ʀᴠ ©"
-global.currency = "g᥆𝗍іᥴᥲs"
+global.currency = "coin"
 global.banner = "https://raw.githubusercontent.com/Dev-lxyz/upload/main/uploads/0wfrp.jpeg"
 global.icono = "https://raw.githubusercontent.com/Dev-lxyz/upload/main/uploads/g68u4.jpeg"
 
