@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-const captions = {      
+const captions = {
   anal: (from, to) => from === to ? 'se la metió en el ano.' : 'se la metió en el ano a.. ',
   cum: (from, to) => from === to ? 'se vino dentro de... Omitiremos eso.' : 'se vino dentro de',
   undress: (from, to) => from === to ? 'se está quitando la ropa' : 'le está quitando la ropa a',
@@ -82,7 +82,8 @@ const alias = {
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   try {
-  if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+    if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+
     const currentCommand = Object.keys(alias).find(key => alias[key].includes(command)) || command
 
     if (!captions[currentCommand]) {
@@ -90,11 +91,21 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       return
     }
 
-    const who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+    // ✅ Determinar "quién" (target)
+    let who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+    if (typeof who !== 'string') who = m.sender
+
     const fromName = m.pushName || '@' + m.sender.split('@')[0]
-    const toName = m.mentionedJid?.[0]
-      ? '@' + (m.mentionedJid[0].split('@')[0])
-      : m.quoted?.pushName || '@' + who.split('@')[0]
+
+    // ✅ Nombre del target siempre como string
+    let toName
+    if (m.mentionedJid?.[0] && typeof m.mentionedJid[0] === 'string') {
+      toName = '@' + m.mentionedJid[0].split('@')[0]
+    } else if (m.quoted?.sender && typeof m.quoted.sender === 'string') {
+      toName = m.quoted.pushName || '@' + m.quoted.sender.split('@')[0]
+    } else {
+      toName = '@' + m.sender.split('@')[0]
+    }
 
     const captionText = captions[currentCommand](fromName, toName)
     const caption = who !== m.sender
