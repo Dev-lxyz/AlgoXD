@@ -98,26 +98,25 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     const isSelf = who === m.sender
 
     // ── Nombre visible del sender
-    let fromName
-    try {
-      fromName = await conn.getName(m.sender)
-    } catch {}
-    if (!fromName) fromName = m.pushName || m.sender.split('@')[0]
+    let fromName = m.pushName
+    if (!fromName) {
+      try { fromName = await conn.getName(m.sender) } catch {}
+    }
+    if (!fromName) fromName = m.sender.split('@')[0]
 
-    // ── Nombre visible del target
+    // ── Nombre visible del target (prioriza pushName del quoted)
     let toName
     if (isSelf) {
       toName = fromName
-    } else {
-      try {
-        toName = await conn.getName(who)
-      } catch {}
-      if (!toName) {
-        toName = m.quoted?.pushName || who.split('@')[0]
-      }
+    } else if (m.quoted?.pushName) {
+      // ✅ Si respondes a un mensaje, pushName ya trae el nombre real
+      toName = m.quoted.pushName
+    } else if (m.mentionedJid?.[0]) {
+      try { toName = await conn.getName(m.mentionedJid[0]) } catch {}
     }
+    if (!toName) toName = who.split('@')[0]
 
-    // ── Construir caption con mención real
+    // ── Construir caption
     let caption
     const sym = getRandomSymbol()
     const fromTag = `@${m.sender.split('@')[0]}`

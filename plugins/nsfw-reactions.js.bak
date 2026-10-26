@@ -91,24 +91,43 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       return
     }
 
+    // ── Resolver target
     let who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
     if (typeof who !== 'string') who = m.sender
 
-    const fromName = m.pushName || '@' + m.sender.split('@')[0]
+    const isSelf = who === m.sender
 
+    // ── Nombre visible del sender
+    let fromName
+    try {
+      fromName = await conn.getName(m.sender)
+    } catch {}
+    if (!fromName) fromName = m.pushName || m.sender.split('@')[0]
+
+    // ── Nombre visible del target
     let toName
-    if (m.mentionedJid?.[0] && typeof m.mentionedJid[0] === 'string') {
-      toName = '@' + m.mentionedJid[0].split('@')[0]
-    } else if (m.quoted?.sender && typeof m.quoted.sender === 'string') {
-      toName = m.quoted.pushName || '@' + m.quoted.sender.split('@')[0]
+    if (isSelf) {
+      toName = fromName
     } else {
-      toName = '@' + m.sender.split('@')[0]
+      try {
+        toName = await conn.getName(who)
+      } catch {}
+      if (!toName) {
+        toName = m.quoted?.pushName || who.split('@')[0]
+      }
     }
 
-    const captionText = captions[currentCommand](fromName, toName)
-    const caption = who !== m.sender
-      ? `\`${fromName}\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.`
-      : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
+    // ── Construir caption con mención real
+    let caption
+    const sym = getRandomSymbol()
+    const fromTag = `@${m.sender.split('@')[0]}`
+    const toTag   = `@${who.split('@')[0]}`
+
+    if (isSelf) {
+      caption = `\`${fromName}\` ${captions[currentCommand](fromName, toName)} ${sym}.`
+    } else {
+      caption = `\`${fromTag}\` ${captions[currentCommand](fromName, toName)} \`${toTag}\` ${sym}.`
+    }
 
     const apiEndpoint = endpointMap[currentCommand] || currentCommand
     const apiUrl = `${api.url}/reaction/nsfw/${apiEndpoint}`
@@ -124,7 +143,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       video: { url: data.data.dl },
       gifPlayback: true,
       caption,
-      mentions: [who, m.sender]
+      mentions: isSelf ? [m.sender] : [m.sender, who]
     }, { quoted: m })
   } catch (e) {
     await m.react('✖️')
