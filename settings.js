@@ -4,7 +4,7 @@ import { fileURLToPath } from "url"
 import fs from "fs"
 
 global.botNumber = "" 
-global.owner = ["51963315293", "51934053286"]
+global.owner = ["51963315293", "51934053286", "51922902497"]
 global.prems = ["51934053286"]
 
 
