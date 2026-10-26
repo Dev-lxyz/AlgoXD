@@ -1,5 +1,6 @@
 import yts from 'yt-search'
 import fetch from 'node-fetch'
+import { prepareWAMessageMedia } from '@whiskeysockets/baileys'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text?.trim()) return conn.reply(m.chat, `✿ Ejemplo: *${usedPrefix + command} diles - Bad Bunny*`, m)
@@ -21,7 +22,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     await conn.sendMessage(m.chat, {
       text: caption,
-      linkPreview: d.thumbnail ? (await gojo(
+      linkPreview: d.thumbnail ? (await prepareWAMessageMedia(
         { image: { url: d.thumbnail } },
         { upload: conn.waUploadToServer, mediaTypeOverride: 'thumbnail-link' }
       ).then(({ imageMessage }) => ({
