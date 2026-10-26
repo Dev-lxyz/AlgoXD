@@ -80,6 +80,16 @@ const alias = {
   squirting: ['squirt','squirting']
 }
 
+// Helper para extraer un JID como string de cualquier formato posible
+function extractJid(jidLike) {
+  if (!jidLike) return undefined
+  if (typeof jidLike === 'string') return jidLike
+  if (typeof jidLike === 'object') {
+    return jidLike.id || jidLike.jid || jidLike.user || undefined
+  }
+  return String(jidLike)
+}
+
 let handler = async (m, { conn, usedPrefix, command }) => {
   try {
     if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
@@ -91,42 +101,30 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       return
     }
 
-    // ── Resolver target
-    let who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
-    if (typeof who !== 'string') who = m.sender
+    // Normalizar JIDs a string SIEMPRE
+    const senderJid = extractJid(m.sender) || ''
+    const mentionedJidRaw = m.mentionedJid?.[0]
+    const mentionedJid = extractJid(mentionedJidRaw)
+    const quotedJid = extractJid(m.quoted?.sender)
 
-    const isSelf = who === m.sender
+    let who = mentionedJid || quotedJid || senderJid
+    if (!who) who = senderJid
 
-    // ── Nombre visible del sender
-    let fromName = m.pushName
-    if (!fromName) {
-      try { fromName = await conn.getName(m.sender) } catch {}
-    }
-    if (!fromName) fromName = m.sender.split('@')[0]
+    const fromName = m.pushName || '@' + senderJid.split('@')[0]
 
-    // ── Nombre visible del target (prioriza pushName del quoted)
     let toName
-    if (isSelf) {
-      toName = fromName
-    } else if (m.quoted?.pushName) {
-      // ✅ Si respondes a un mensaje, pushName ya trae el nombre real
-      toName = m.quoted.pushName
-    } else if (m.mentionedJid?.[0]) {
-      try { toName = await conn.getName(m.mentionedJid[0]) } catch {}
-    }
-    if (!toName) toName = who.split('@')[0]
-
-    // ── Construir caption
-    let caption
-    const sym = getRandomSymbol()
-    const fromTag = `@${m.sender.split('@')[0]}`
-    const toTag   = `@${who.split('@')[0]}`
-
-    if (isSelf) {
-      caption = `\`${fromName}\` ${captions[currentCommand](fromName, toName)} ${sym}.`
+    if (mentionedJid) {
+      toName = '@' + mentionedJid.split('@')[0]
+    } else if (quotedJid) {
+      toName = m.quoted?.pushName || '@' + quotedJid.split('@')[0]
     } else {
-      caption = `\`${fromTag}\` ${captions[currentCommand](fromName, toName)} \`${toTag}\` ${sym}.`
+      toName = '@' + senderJid.split('@')[0]
     }
+
+    const captionText = captions[currentCommand](fromName, toName)
+    const caption = who !== senderJid
+      ? `\`${fromName}\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.`
+      : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
 
     const apiEndpoint = endpointMap[currentCommand] || currentCommand
     const apiUrl = `${api.url}/reaction/nsfw/${apiEndpoint}`
@@ -142,7 +140,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       video: { url: data.data.dl },
       gifPlayback: true,
       caption,
-      mentions: isSelf ? [m.sender] : [m.sender, who]
+      mentions: [who, senderJid].filter(Boolean)
     }, { quoted: m })
   } catch (e) {
     await m.react('✖️')
