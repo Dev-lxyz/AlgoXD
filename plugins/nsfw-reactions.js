@@ -80,14 +80,11 @@ const alias = {
   squirting: ['squirt','squirting']
 }
 
-// Helper para extraer un JID como string de cualquier formato posible
-function extractJid(jidLike) {
-  if (!jidLike) return undefined
-  if (typeof jidLike === 'string') return jidLike
-  if (typeof jidLike === 'object') {
-    return jidLike.id || jidLike.jid || jidLike.user || undefined
-  }
-  return String(jidLike)
+// Extrae un JID válido como string desde string u objeto
+function extractJid(v) {
+  if (!v) return null
+  if (typeof v === 'string') return v
+  return v.id || v.jid || v.user || null
 }
 
 let handler = async (m, { conn, usedPrefix, command }) => {
@@ -101,30 +98,36 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       return
     }
 
-    // Normalizar JIDs a string SIEMPRE
-    const senderJid = extractJid(m.sender) || ''
-    const mentionedJidRaw = m.mentionedJid?.[0]
-    const mentionedJid = extractJid(mentionedJidRaw)
-    const quotedJid = extractJid(m.quoted?.sender)
-
-    let who = mentionedJid || quotedJid || senderJid
-    if (!who) who = senderJid
-
-    const fromName = m.pushName || '@' + senderJid.split('@')[0]
-
-    let toName
-    if (mentionedJid) {
-      toName = '@' + mentionedJid.split('@')[0]
-    } else if (quotedJid) {
-      toName = m.quoted?.pushName || '@' + quotedJid.split('@')[0]
-    } else {
-      toName = '@' + senderJid.split('@')[0]
+    const senderJid = extractJid(m.sender)
+    if (!senderJid) {
+      await m.react('✖️')
+      return
     }
 
-    const captionText = captions[currentCommand](fromName, toName)
-    const caption = who !== senderJid
-      ? `\`${fromName}\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.`
-      : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
+    // Detectar el "otro" (mención directa o cita)
+    let targetJid = null
+    if (m.mentionedJid?.[0]) {
+      targetJid = extractJid(m.mentionedJid[0])
+    } else if (m.quoted?.sender) {
+      targetJid = extractJid(m.quoted.sender)
+    }
+
+    const who = targetJid || senderJid
+    const isSelf = !targetJid || targetJid === senderJid
+
+    const fromName = m.pushName || '@' + senderJid.split('@')[0]
+    // El tag SIEMPRE debe ser "@<número>" para que WhatsApp lo detecte
+    const toTag = targetJid ? '@' + targetJid.split('@')[0] : fromName
+
+    const captionText = captions[currentCommand](isSelf ? fromName : fromName, isSelf ? fromName : toTag)
+
+    const caption = isSelf
+      ? `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
+      : `\`${fromName}\` ${captionText} \`${toTag}.\` ${getRandomSymbol()}.`
+
+    // mentions con JIDs completos y válidos
+    const mentions = [senderJid]
+    if (targetJid && targetJid !== senderJid) mentions.push(targetJid)
 
     const apiEndpoint = endpointMap[currentCommand] || currentCommand
     const apiUrl = `${api.url}/reaction/nsfw/${apiEndpoint}`
@@ -140,7 +143,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       video: { url: data.data.dl },
       gifPlayback: true,
       caption,
-      mentions: [who, senderJid].filter(Boolean)
+      mentions
     }, { quoted: m })
   } catch (e) {
     await m.react('✖️')
