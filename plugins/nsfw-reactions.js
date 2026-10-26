@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-const captions = {
+const captions = {      
   anal: (from, to) => from === to ? 'se la metió en el ano.' : 'se la metió en el ano a.. ',
   cum: (from, to) => from === to ? 'se vino dentro de... Omitiremos eso.' : 'se vino dentro de',
   undress: (from, to) => from === to ? 'se está quitando la ropa' : 'le está quitando la ropa a',
@@ -46,70 +46,60 @@ const endpointMap = {
 }
 
 const alias = {
-  anal: ['anal','violar'], cum: ['cum'], undress: ['undress','encuerar'],
-  fuck: ['fuck','coger'], spank: ['spank','nalgada'], lickpussy: ['lickpussy'],
-  fap: ['fap','paja'], grope: ['grope'], sixnine: ['sixnine','69'],
-  suckboobs: ['suckboobs'], grabboobs: ['grabboobs'],
-  blowjob: ['blowjob','mamada','bj'], boobjob: ['boobjob'],
-  yuri: ['yuri','tijeras'], footjob: ['footjob'],
-  cummouth: ['cummouth','cummoth'], cumshot: ['cumshot'], handjob: ['handjob'],
-  lickass: ['lickass'], lickdick: ['lickdick'], fingering: ['fingering'],
-  creampie: ['creampie'], facesitting: ['facesitting'], deepthroat: ['deepthroat'],
-  thighjob: ['thighjob'], bondage: ['bondage'], pegging: ['pegging'],
-  futanari: ['futanari','futa'], yaoi: ['yaoi'], bukkake: ['bukkake'],
-  orgy: ['orgy','orgia'], squirting: ['squirt','squirting']
-}
-
-// Extrae JID como string desde string u objeto
-function extractJid(v) {
-  if (!v) return null
-  if (typeof v === 'string') return v
-  return v.id || v.jid || v.lid || v.user || null
-}
-
-// Usa la función del handler (si existe) para convertir @lid → @s.whatsapp.net
-async function resolveJid(jid, conn, chat) {
-  if (!jid) return jid
-  if (typeof global.resolveLidToRealJid === 'function') {
-    try {
-      const resolved = await global.resolveLidToRealJid(jid, conn, chat)
-      return resolved || jid
-    } catch { return jid }
-  }
-  return jid
+  anal: ['anal','violar'],
+  cum: ['cum'],
+  undress: ['undress','encuerar'],
+  fuck: ['fuck','coger'],
+  spank: ['spank','nalgada'],
+  lickpussy: ['lickpussy'],
+  fap: ['fap','paja'],
+  grope: ['grope'],
+  sixnine: ['sixnine','69'],
+  suckboobs: ['suckboobs'],
+  grabboobs: ['grabboobs'],
+  blowjob: ['blowjob','mamada','bj'],
+  boobjob: ['boobjob'],
+  yuri: ['yuri','tijeras'],
+  footjob: ['footjob'],
+  cummouth: ['cummouth','cummoth'],
+  cumshot: ['cumshot'],
+  handjob: ['handjob'],
+  lickass: ['lickass'],
+  lickdick: ['lickdick'],
+  fingering: ['fingering'],
+  creampie: ['creampie'],
+  facesitting: ['facesitting'],
+  deepthroat: ['deepthroat'],
+  thighjob: ['thighjob'],
+  bondage: ['bondage'],
+  pegging: ['pegging'],
+  futanari: ['futanari','futa'],
+  yaoi: ['yaoi'],
+  bukkake: ['bukkake'],
+  orgy: ['orgy','orgia'],
+  squirting: ['squirt','squirting']
 }
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   try {
-    if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+  if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+    const currentCommand = Object.keys(alias).find(key => alias[key].includes(command)) || command
 
-    const currentCommand = Object.keys(alias).find(k => alias[k].includes(command)) || command
-    if (!captions[currentCommand]) { await m.react('✖️'); return }
+    if (!captions[currentCommand]) {
+      await m.react('✖️')
+      return
+    }
 
-    // 🔑 El handler ya resolvió el sender a JID real
-    const senderJid = m.senderResolved || extractJid(m.sender) || m.sender
+    const who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+    const fromName = m.pushName || '@' + m.sender.split('@')[0]
+    const toName = m.mentionedJid?.[0]
+      ? '@' + (m.mentionedJid[0].split('@')[0])
+      : m.quoted?.pushName || '@' + who.split('@')[0]
 
-    // Detectar el "otro" (mención o cita)
-    let targetRaw = null
-    if (m.mentionedJid?.[0]) targetRaw = extractJid(m.mentionedJid[0])
-    else if (m.quoted?.sender) targetRaw = extractJid(m.quoted.sender)
-
-    // 🔑 Convertir @lid → @s.whatsapp.net usando la función del handler
-    const targetJid = targetRaw ? await resolveJid(targetRaw, conn, m.chat) : null
-
-    const isSelf = !targetJid || targetJid === senderJid
-
-    const fromName = m.pushName || '@' + senderJid.split('@')[0]
-    const toTag = !isSelf ? '@' + targetJid.split('@')[0] : fromName
-
-    const captionText = captions[currentCommand](fromName, isSelf ? fromName : toTag)
-
-    const caption = isSelf
-      ? `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
-      : `\`${fromName}\` ${captionText} \`${toTag}.\` ${getRandomSymbol()}.`
-
-    // mentions con JIDs reales (no LIDs)
-    const mentions = [...new Set([senderJid, targetJid].filter(Boolean))]
+    const captionText = captions[currentCommand](fromName, toName)
+    const caption = who !== m.sender
+      ? `\`${fromName}\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.`
+      : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
 
     const apiEndpoint = endpointMap[currentCommand] || currentCommand
     const apiUrl = `${api.url}/reaction/nsfw/${apiEndpoint}`
@@ -125,7 +115,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       video: { url: data.data.dl },
       gifPlayback: true,
       caption,
-      mentions
+      mentions: [who, m.sender]
     }, { quoted: m })
   } catch (e) {
     await m.react('✖️')

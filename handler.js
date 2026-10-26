@@ -588,7 +588,6 @@ export async function handler(chatUpdate) {
 }
 
 global.dfail = (type, m, conn) => {
-global.resolveLidToRealJid = resolveLidToRealJid
   const msg = {
     rowner: `🍡 El comando solo puede ser usado por el creadores del bot.`,
     owner: `🍡 El comando solo puede ser usado por el creador.`,
