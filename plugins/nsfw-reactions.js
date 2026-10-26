@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 
-const captions = {
+const captions = {      
   anal: (from, to) => from === to ? 'se la metió en el ano.' : 'se la metió en el ano a.. ',
   cum: (from, to) => from === to ? 'se vino dentro de... Omitiremos eso.' : 'se vino dentro de',
   undress: (from, to) => from === to ? 'se está quitando la ropa' : 'le está quitando la ropa a',
@@ -80,89 +80,26 @@ const alias = {
   squirting: ['squirt','squirting']
 }
 
-// Extrae un JID como string desde string u objeto
-function extractJid(v) {
-  if (!v) return null
-  if (typeof v === 'string') return v
-  return v.id || v.jid || v.user || null
-}
-
-// Convierte un @lid a @s.whatsapp.net (JID real) sin importar utils
-async function resolveLid(jid, conn, chatId) {
-  if (!jid || typeof jid !== 'string') return jid
-  if (!jid.endsWith('@lid')) return jid
-
-  const num = jid.split('@')[0].split(':')[0]
-
-  // 1) Metadata del grupo (más fiable)
-  if (chatId && chatId.endsWith('@g.us')) {
-    try {
-      const meta = await conn.groupMetadata(chatId)
-      const p = meta?.participants?.find(x => {
-        const lidNum = (x.lid || '').split('@')[0].split(':')[0]
-        const idNum  = (x.id  || '').split('@')[0].split(':')[0]
-        return lidNum === num || idNum === num
-      })
-      if (p?.phoneNumber) return p.phoneNumber
-      if (p?.id && p.id.endsWith('@s.whatsapp.net')) return p.id
-      if (p?.jid && String(p.jid).endsWith('@s.whatsapp.net')) return p.jid
-    } catch {}
-  }
-
-  // 2) signalRepository.lidMapping
-  try {
-    const pn = await conn.signalRepository?.lidMapping?.getPNForLID?.(jid)
-    if (typeof pn === 'string' && pn) return pn
-  } catch {}
-
-  // 3) store / lidBindings / contacts
-  try {
-    const s = conn.store
-    if (s?.lidBindings && s.lidBindings[jid]) return s.lidBindings[jid]
-    if (s?.contacts) {
-      for (const c of Object.values(s.contacts)) {
-        if (c?.lid === jid && c?.id) return c.id
-      }
-    }
-  } catch {}
-
-  return jid
-}
-
 let handler = async (m, { conn, usedPrefix, command }) => {
   try {
-    if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+  if (!db.data.chats[m.chat].nsfw && m.isGroup) return m.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con:\n» *${usedPrefix}nsfw on*`)
+    const currentCommand = Object.keys(alias).find(key => alias[key].includes(command)) || command
 
-    const currentCommand = Object.keys(alias).find(k => alias[k].includes(command)) || command
-    if (!captions[currentCommand]) { await m.react('✖️'); return }
+    if (!captions[currentCommand]) {
+      await m.react('✖️')
+      return
+    }
 
-    const senderRaw = extractJid(m.sender)
-    if (!senderRaw) { await m.react('✖️'); return }
-    const senderJid = await resolveLid(senderRaw, conn, m.chat)
+    const who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+    const fromName = m.pushName || '@' + m.sender.split('@')[0]
+    const toName = m.mentionedJid?.[0]
+      ? '@' + (m.mentionedJid[0].split('@')[0])
+      : m.quoted?.pushName || '@' + who.split('@')[0]
 
-    // Detectar el "otro" (mención o cita)
-    let targetRaw = null
-    if (m.mentionedJid?.[0]) targetRaw = extractJid(m.mentionedJid[0])
-    else if (m.quoted?.sender) targetRaw = extractJid(m.quoted.sender)
-
-    // 🔑 Convertir LID → JID real
-    const targetJid = targetRaw ? await resolveLid(targetRaw, conn, m.chat) : null
-
-    const isSelf = !targetJid || targetJid === senderJid
-
-    const fromName = m.pushName || '@' + senderJid.split('@')[0]
-    const toTag = !isSelf ? '@' + targetJid.split('@')[0] : fromName
-
-    const captionText = captions[currentCommand](fromName, isSelf ? fromName : toTag)
-
-    const caption = isSelf
-      ? `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
-      : `\`${fromName}\` ${captionText} \`${toTag}.\` ${getRandomSymbol()}.`
-
-    // Incluir resolved + original para máxima compatibilidad
-    const mentions = [...new Set(
-      [senderJid, senderRaw, targetJid, targetRaw].filter(Boolean)
-    )]
+    const captionText = captions[currentCommand](fromName, toName)
+    const caption = who !== m.sender
+      ? `\`${fromName}\` ${captionText} \`${toName}.\` ${getRandomSymbol()}.`
+      : `\`${fromName}\` ${captionText} ${getRandomSymbol()}.`
 
     const apiEndpoint = endpointMap[currentCommand] || currentCommand
     const apiUrl = `${api.url}/reaction/nsfw/${apiEndpoint}`
@@ -178,7 +115,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
       video: { url: data.data.dl },
       gifPlayback: true,
       caption,
-      mentions
+      mentions: [who, m.sender]
     }, { quoted: m })
   } catch (e) {
     await m.react('✖️')
