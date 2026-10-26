@@ -4,7 +4,7 @@ let handler = async (m, { conn }) => {
     {
       "interactiveMessage": {
         "header": {
-          "title": "⁌⁍  ㅤׅ  ㅤׄ   𝗢 𝗪 𝗡 𝗘 𝗥  🌿  𝅼   ෭ "
+          "title": "⁌⁍  ㅤׅ  ㅤׄ   𝗢 𝗪 𝗡 𝗘 𝗥  🍬  𝅼   ෭ "
         },
         "body": {
           "text": "```</> Contacto oficial - Soporte / Desarrollo```"
@@ -20,12 +20,12 @@ let handler = async (m, { conn }) => {
                 start_datetime: "2026-06-12T12:32:04.983Z",
                 end_datetime: "2026-06-12T12:42:04.983Z",
                 location: "🇵🇪 Peru 🇵🇪",
-                booking_url: "https://wa.me/51934053286",
-                phone_number: "51934053286",
-                booking_management_url: "https://wa.me/51934053286",
-                description: "*◦ 🍃 Name :* ɪ'ᴍ sʜᴀᴅᴏᴡ 🥢\n*◦ 🍜 Status :* _Creador & owner_\n",
+                booking_url: "https://wa.me/51963315293",
+                phone_number: "51963315293",
+                booking_management_url: "https://wa.me/51963315293",
+                description: "*◦ 🧃 Name :* espantaviejas3000 🥢\n*◦ 💎 Status :* _Creador & owner_\n",
                 email: "",
-                display_text: "🌱 ᴍᴀɪɴ ᴏᴡɴᴇʀ"
+                display_text: "🧋 ᴍᴀɪɴ ᴏᴡɴᴇʀ"
               })
             }
           ],
